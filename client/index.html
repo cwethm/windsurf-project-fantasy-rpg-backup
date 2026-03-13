@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voxel MMO</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #000;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            pointer-events: none;
+        }
+        
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: white;
+        }
+        
+        #crosshair::before {
+            top: 50%;
+            left: -2px;
+            width: 24px;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+        
+        #crosshair::after {
+            left: 50%;
+            top: -2px;
+            width: 2px;
+            height: 24px;
+            transform: translateX(-50%);
+        }
+        
+        /* Target block name - shown just below crosshair */
+        #target-name {
+            position: absolute;
+            top: calc(50% + 22px);
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.15s;
+        }
+        #target-name.hidden { opacity: 0; }
+        
+        /* Quickbar at bottom */
+        #quickbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+            pointer-events: auto;
+        }
+        
+        .slot {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #555;
+            background: rgba(80, 80, 80, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        
+        .slot:hover {
+            border-color: #aaa;
+            background: rgba(120, 120, 120, 0.6);
+        }
+        
+        .slot.selected {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .slot.drag-over {
+            border-color: #0f0;
+            background: rgba(0, 255, 0, 0.15);
+        }
+        
+        .slot .item-name {
+            font-size: 8px;
+            text-align: center;
+            line-height: 1.1;
+            text-shadow: 1px 1px 1px #000;
+            overflow: hidden;
+            max-width: 46px;
+        }
+        
+        .slot .item-count {
+            position: absolute;
+            bottom: 1px;
+            right: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+        
+        .slot .slot-number {
+            position: absolute;
+            top: 1px;
+            left: 3px;
+            font-size: 8px;
+            color: #888;
+        }
+        
+        .slot .item-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            margin-bottom: 1px;
+        }
+        
+        /* Full inventory panel (toggle with E) */
+        #inventoryPanel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 30, 0.95);
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 15px;
+            pointer-events: auto;
+            z-index: 50;
+            min-width: 340px;
+        }
+        
+        #inventoryPanel.open {
+            display: block;
+        }
+        
+        #inventoryPanel h3 {
+            color: #ddd;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .inv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .inv-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .inv-actions button {
+            padding: 4px 8px;
+            background: #4a4a4a;
+            color: #ddd;
+            border: 1px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .inv-actions button:hover {
+            background: #5a5a5a;
+            border-color: #888;
+        }
+        
+        .inv-actions button:active {
+            background: #3a3a3a;
+        }
+        
+        /* Crafting Panel */
+        #craftingPanel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(40, 40, 40, 0.95);
+            border: 2px solid #666;
+            border-radius: 10px;
+            padding: 20px;
+            color: white;
+            pointer-events: auto;
+            z-index: 50;
+            width: 600px;
+            max-height: 500px;
+        }
+        
+        #craftingPanel.open {
+            display: block;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #666;
+        }
+        
+        .panel-header h3 {
+            margin: 0;
+            color: #ddd;
+        }
+        
+        .panel-tabs {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .tab-button {
+            padding: 5px 10px;
+            background: #4a4a4a;
+            color: #ddd;
+            border: 1px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            background: #5a5a5a;
+        }
+        
+        .tab-button.active {
+            background: #666;
+            border-color: #888;
+        }
+        
+        .crafting-content {
+            display: flex;
+            gap: 20px;
+            height: 380px;
+        }
+        
+        .recipe-list {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .recipe-item {
+            padding: 8px;
+            margin: 2px 0;
+            background: #4a4a4a;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        
+        .recipe-item:hover {
+            background: #5a5a5a;
+        }
+        
+        .recipe-item.selected {
+            background: #666;
+            border: 1px solid #888;
+        }
+        
+        .recipe-icon {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #666;
+            border-radius: 3px;
+        }
+        
+        .recipe-name {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .recipe-count {
+            color: #aaa;
+            font-size: 12px;
+        }
+        
+        .recipe-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #selectedRecipe {
+            flex: 1;
+            padding: 10px;
+            background: #3a3a3a;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+        }
+        
+        .recipe-craft-area {
+            text-align: center;
+        }
+        
+        .craft-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 2px;
+            margin: 0 auto 10px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 5px;
+            width: fit-content;
+        }
+        
+        .craft-slot {
+            border: 1px solid #666;
+            border-radius: 3px;
+            background: #3a3a3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .craft-slot.filled {
+            background: #4a4a4a;
+        }
+        
+        #craftButton {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        #craftButton:hover:not(:disabled) {
+            background: #45a049;
+        }
+        
+        #craftButton:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .inv-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .inv-grid .slot {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .inv-grid .slot .item-name {
+            font-size: 7px;
+        }
+        
+        .inv-grid .slot .item-icon {
+            width: 22px;
+            height: 22px;
+        }
+        
+        .inv-section-label {
+            color: #999;
+            font-size: 11px;
+            margin: 8px 0 4px 0;
+        }
+        
+        /* Container panel */
+        #containerPanel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            background: rgba(30, 20, 10, 0.95);
+            border: 2px solid #8B6914;
+            border-radius: 8px;
+            padding: 15px;
+            pointer-events: auto;
+            z-index: 51;
+            min-width: 340px;
+        }
+        
+        #containerPanel.open {
+            display: block;
+        }
+        
+        #containerPanel h3 {
+            color: #DAA520;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #8B6914;
+            padding-bottom: 5px;
+        }
+        
+        #console {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 400px;
+            max-height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            pointer-events: auto;
+        }
+        
+        #console.hidden {
+            display: none;
+        }
+        
+        #chatContainer {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: 500px;
+            max-height: 300px;
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+        }
+        
+        #chatMessages {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 250px;
+            margin-bottom: 5px;
+        }
+        
+        #chatInput {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid #666;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            display: none;
+        }
+        
+        #chatInput.active {
+            display: block;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        
+        .chat-message {
+            margin: 2px 0;
+            word-wrap: break-word;
+        }
+        
+        .chat-message.system {
+            color: #ffeb3b;
+        }
+        
+        .chat-message.whisper {
+            color: #e91e63;
+            font-style: italic;
+        }
+        
+        .chat-message .username {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .chat-message .timestamp {
+            color: #888;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        #status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        
+        #authScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        #authScreen form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 300px;
+        }
+        
+        #authScreen h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        #authScreen h2 {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        #authScreen input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        #authScreen button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        
+        #authScreen button:hover {
+            background: #5a6fd8;
+        }
+        
+        #authScreen p {
+            margin-top: 15px;
+            color: #666;
+        }
+        
+        #authScreen a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        #authScreen a:hover {
+            text-decoration: underline;
+        }
+        
+        .block-indicator {
+            position: absolute;
+            pointer-events: none;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Player Stats */
+        #playerStats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            min-width: 200px;
+            pointer-events: none;
+        }
+        
+        #levelText {
+            color: #f1c40f;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stat-bar {
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: #ecf0f1;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        
+        .bar-container {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .health-bar {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+        
+        .mana-bar {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+        
+        .stamina-bar {
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+        }
+        
+        .exp-bar {
+            background: linear-gradient(90deg, #f1c40f, #f39c12);
+        }
+        
+        .bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        /* NPC Dialogue */
+        .npc-dialogue {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            border: 3px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 400px;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            pointer-events: all;
+        }
+        
+        .npc-dialogue-content h3 {
+            margin: 0 0 15px 0;
+            color: #3498db;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .npc-dialogue-content p {
+            margin: 0 0 20px 0;
+            color: #ecf0f1;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        
+        .dialogue-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .dialogue-option {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .dialogue-option:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Level Up Effect */
+        .level-up-effect {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2000;
+            animation: levelUpPulse 2s ease-out forwards;
+        }
+        
+        .level-up-text {
+            font-size: 72px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 
+                0 0 10px #f1c40f,
+                0 0 20px #f1c40f,
+                0 0 30px #f1c40f,
+                0 0 40px #f39c12,
+                0 0 50px #f39c12,
+                0 0 60px #f39c12;
+            animation: levelUpText 2s ease-out forwards;
+        }
+        
+        @keyframes levelUpPulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes levelUpText {
+            0% {
+                transform: scale(0.5) rotate(-10deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(5deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0;
+            }
+        }
+
+        /* Equipment Panel */
+        #equipPanel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: calc(50% + 200px);
+            transform: translateY(-50%);
+            background: rgba(20, 20, 30, 0.97);
+            border: 2px solid #7a5c2e;
+            border-radius: 10px;
+            padding: 16px;
+            pointer-events: auto;
+            z-index: 51;
+            width: 260px;
+            color: #ddd;
+            font-size: 13px;
+        }
+        #equipPanel.open { display: block; }
+        #equipPanel h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: #f0c060;
+            border-bottom: 1px solid #7a5c2e;
+            padding-bottom: 6px;
+            text-align: center;
+        }
+        .equip-grid {
+            display: grid;
+            grid-template-columns: 60px 1fr 60px;
+            grid-template-rows: repeat(4, 60px);
+            gap: 6px;
+            align-items: center;
+            justify-items: center;
+        }
+        .equip-slot {
+            width: 54px;
+            height: 54px;
+            border: 2px solid #7a5c2e;
+            background: rgba(60, 40, 10, 0.5);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.15s;
+        }
+        .equip-slot:hover { border-color: #f0c060; background: rgba(90, 60, 15, 0.6); }
+        .equip-slot.filled { border-color: #c08000; }
+        .equip-slot-label {
+            font-size: 9px;
+            color: #888;
+            position: absolute;
+            bottom: 2px;
+            text-align: center;
+            pointer-events: none;
+        }
+        .equip-slot-icon {
+            font-size: 20px;
+            pointer-events: none;
+        }
+        .equip-slot-item {
+            font-size: 9px;
+            color: #f0c060;
+            text-align: center;
+            padding: 0 2px;
+            pointer-events: none;
+            max-width: 52px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .equip-center {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 24px;
+        }
+        .equip-stats {
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            font-size: 11px;
+            color: #aaa;
+            line-height: 1.7;
+        }
+        .equip-stat-row { display: flex; justify-content: space-between; }
+        .equip-stat-val { color: #f0c060; }
+
+        /* ── Mini-map ── */
+        #minimapContainer {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 14px rgba(0,0,0,0.7), inset 0 0 6px rgba(0,0,0,0.4);
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 20;
+        }
+        #minimap { width: 160px; height: 160px; display: block; }
+        #minimapLabel {
+            position: absolute; bottom: 3px; width: 100%;
+            text-align: center; font-size: 9px;
+            color: rgba(255,255,255,0.4); letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        /* ── Compass ── */
+        #compassWidget {
+            position: absolute;
+            top: 188px; right: 54px;
+            width: 72px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 20;
+        }
+        #compassCanvas { display: block; margin: 0 auto; }
+        #compassTargetName {
+            font-size: 9px; color: #f0c060;
+            margin-top: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        /* ── Exploration Map Panel ── */
+        #explorationMapPanel {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(90vw, 820px);
+            height: min(88vh, 680px);
+            background: rgba(10, 16, 26, 0.98);
+            border: 2px solid #2a5a3a;
+            border-radius: 12px;
+            pointer-events: auto;
+            z-index: 60;
+            flex-direction: column;
+            padding: 12px;
+            gap: 8px;
+            color: #ccc; font-size: 12px;
+        }
+        #explorationMapPanel.open { display: flex; }
+        #explorationMapHeader {
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #2a5a3a; padding-bottom: 8px; flex-shrink: 0;
+        }
+        #explorationMapHeader h3 { margin: 0; color: #7bc; font-size: 14px; }
+        #mapControls { display: flex; gap: 6px; align-items: center; }
+        #mapControls button {
+            background: rgba(42,90,58,0.6); border: 1px solid #2a5a3a;
+            border-radius: 4px; color: #ccc; padding: 4px 10px;
+            cursor: pointer; font-size: 11px;
+        }
+        #mapControls button:hover { background: rgba(60,120,80,0.7); }
+        #landmarkNameInput {
+            background: rgba(0,0,0,0.5); border: 1px solid #2a5a3a;
+            border-radius: 4px; color: #ccc; padding: 4px 8px;
+            font-size: 11px; width: 130px;
+        }
+        #explorationMapBody { display: flex; flex: 1; gap: 8px; overflow: hidden; min-height: 0; }
+        #explorationMapCanvas {
+            flex: 1; border: 1px solid #1a3a2a; border-radius: 6px;
+            cursor: crosshair; image-rendering: pixelated; min-width: 0;
+        }
+        #explorationMapSidebar {
+            width: 190px; display: flex; flex-direction: column;
+            gap: 8px; flex-shrink: 0;
+        }
+        #landmarksList { flex: 1; overflow-y: auto; }
+        #landmarksList h4 {
+            margin: 0 0 6px 0; font-size: 10px; color: #7bc;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .landmark-item {
+            display: flex; align-items: center; gap: 5px;
+            padding: 4px 6px; border-radius: 4px; font-size: 11px;
+            cursor: pointer; border: 1px solid transparent;
+        }
+        .landmark-item:hover { border-color: #2a5a3a; background: rgba(42,90,58,0.3); }
+        .landmark-item.targeted { border-color: #f0c060; color: #f0c060; }
+        .landmark-target-btn { cursor: pointer; font-size: 13px; flex-shrink: 0; }
+        .landmark-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .landmark-del-btn { cursor: pointer; opacity: 0.35; font-size: 10px; flex-shrink: 0; }
+        .landmark-del-btn:hover { opacity: 1; }
+        #mapFiddleHint {
+            font-size: 10px; color: #456; text-align: center;
+            padding: 4px; flex-shrink: 0; line-height: 1.4;
+        }
+        #mapZoomInfo { font-size: 10px; color: #456; text-align: center; }
+
+        /* ── Quest Journal ── */
+        #questJournalPanel {
+            display: none;
+            position: absolute;
+            top: 50%; right: 12px;
+            transform: translateY(-50%);
+            width: 290px; max-height: 68vh;
+            overflow-y: auto;
+            background: rgba(14, 10, 26, 0.97);
+            border: 2px solid #5a3a8a;
+            border-radius: 10px;
+            padding: 14px;
+            pointer-events: auto;
+            z-index: 51; color: #ddd; font-size: 12px;
+        }
+        #questJournalPanel.open { display: block; }
+        #questJournalPanel h3 {
+            margin: 0 0 10px 0; font-size: 14px; color: #c090ff;
+            border-bottom: 1px solid #5a3a8a; padding-bottom: 6px;
+        }
+        .quest-item {
+            margin-bottom: 10px; padding: 8px;
+            background: rgba(90,58,138,0.12); border: 1px solid #5a3a8a; border-radius: 6px;
+        }
+        .quest-name { font-size: 12px; font-weight: bold; color: #c090ff; margin-bottom: 3px; }
+        .quest-desc { font-size: 10px; color: #999; margin-bottom: 5px; }
+        .quest-objective {
+            font-size: 10px; display: flex; align-items: center;
+            gap: 5px; padding: 2px 0; color: #bbb;
+        }
+        .quest-objective.done { color: #5f5; text-decoration: line-through; opacity: 0.6; }
+        .quest-section-title {
+            font-size: 10px; color: #7a5aaa; text-transform: uppercase;
+            letter-spacing: 1px; margin: 10px 0 4px 0;
+        }
+        .quest-empty {
+            font-size: 11px; color: #444; font-style: italic;
+            text-align: center; padding: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="authScreen">
+        <form id="loginForm">
+            <h1>Voxel MMO</h1>
+            <h2>Login</h2>
+            <input type="text" id="loginUsername" placeholder="Username" required maxlength="20">
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <br>
+            <button type="submit">Login</button>
+            <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+        </form>
+        
+        <form id="registerForm" style="display: none;">
+            <h1>Voxel MMO</h1>
+            <h2>Register</h2>
+            <input type="text" id="registerUsername" placeholder="Username" required maxlength="20" minlength="3">
+            <input type="password" id="registerPassword" placeholder="Password" required minlength="6">
+            <input type="email" id="registerEmail" placeholder="Email (optional)">
+            <br>
+            <button type="submit">Register</button>
+            <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+        </form>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="hud">
+        <div id="crosshair"></div>
+        <div id="target-name" class="hidden"></div>
+        <div id="quickbar"></div>
+        
+        <!-- Player Stats -->
+        <div id="playerStats">
+            <div id="levelText">Level 1</div>
+            <div class="stat-bar">
+                <div class="stat-label">Health</div>
+                <div class="bar-container">
+                    <div id="healthBar" class="bar health-bar"></div>
+                    <span class="bar-text">100/100</span>
+                </div>
+            </div>
+            <div class="stat-bar">
+                <div class="stat-label">Mana</div>
+                <div class="bar-container">
+                    <div id="manaBar" class="bar mana-bar"></div>
+                    <span class="bar-text">50/50</span>
+                </div>
+            </div>
+            <div class="stat-bar">
+                <div class="stat-label">Stamina</div>
+                <div class="bar-container">
+                    <div id="staminaBar" class="bar stamina-bar"></div>
+                    <span class="bar-text">100/100</span>
+                </div>
+            </div>
+            <div class="stat-bar">
+                <div class="stat-label">Experience</div>
+                <div class="bar-container">
+                    <div id="expBar" class="bar exp-bar"></div>
+                    <span class="bar-text">0/100</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mini-map -->
+        <div id="minimapContainer">
+            <canvas id="minimap" width="160" height="160"></canvas>
+            <div id="minimapLabel">MAP</div>
+        </div>
+
+        <!-- Compass -->
+        <div id="compassWidget">
+            <canvas id="compassCanvas" width="72" height="72"></canvas>
+            <div id="compassTargetName"></div>
+        </div>
+
+        <!-- Chat System -->
+        <div id="chatContainer">
+            <div id="chatMessages"></div>
+            <input type="text" id="chatInput" placeholder="Press T to chat..." maxlength="200">
+        </div>
+        
+        <!-- Crafting Panel -->
+        <div id="craftingPanel">
+            <div class="panel-header">
+                <h3>Crafting [C to close]</h3>
+                <div class="panel-tabs">
+                    <button id="craftAllTab" class="tab-button active">All</button>
+                    <button id="craftToolsTab" class="tab-button">Tools</button>
+                    <button id="craftWeaponsTab" class="tab-button">Weapons</button>
+                    <button id="craftArmorTab" class="tab-button">Armor</button>
+                    <button id="craftMaterialsTab" class="tab-button">Materials</button>
+                </div>
+            </div>
+            <div class="crafting-content">
+                <div class="recipe-list" id="recipeList"></div>
+                <div class="recipe-details">
+                    <div id="selectedRecipe">
+                        <p>Select a recipe to view details</p>
+                    </div>
+                    <div class="recipe-craft-area">
+                        <div class="craft-grid" id="craftGrid"></div>
+                        <button id="craftButton" disabled>Craft</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="inventoryPanel">
+            <div class="inv-header">
+                <h3>Inventory [E to close]</h3>
+                <div class="inv-actions">
+                    <button id="sortInvBtn" title="Sort Inventory">Sort</button>
+                    <button id="stackInvBtn" title="Stack Items">Stack</button>
+                    <button id="quickDropBtn" title="Quick Drop">Drop</button>
+                </div>
+            </div>
+            <div class="inv-section-label">Quickbar</div>
+            <div class="inv-grid" id="invQuickbar"></div>
+            <div class="inv-section-label">Backpack</div>
+            <div class="inv-grid" id="invMain"></div>
+        </div>
+        <!-- Equipment Panel (toggle with G) -->
+        <div id="equipPanel">
+            <h3>⚔ Equipment [G]</h3>
+            <div class="equip-grid">
+                <!-- Left column: head, chest, legs, boots -->
+                <div class="equip-slot" id="slot-helmet"    data-slot="helmet">
+                    <span class="equip-slot-icon">🪖</span>
+                    <span class="equip-slot-label">Head</span>
+                </div>
+                <!-- Center silhouette placeholder -->
+                <div class="equip-center">🧍</div>
+                <!-- Right column: weapon, offhand, ring, amulet -->
+                <div class="equip-slot" id="slot-weapon"    data-slot="weapon">
+                    <span class="equip-slot-icon">⚔️</span>
+                    <span class="equip-slot-label">Weapon</span>
+                </div>
+
+                <div class="equip-slot" id="slot-chestplate" data-slot="chestplate">
+                    <span class="equip-slot-icon">🥋</span>
+                    <span class="equip-slot-label">Chest</span>
+                </div>
+                <div></div>
+                <div class="equip-slot" id="slot-offhand"   data-slot="offhand">
+                    <span class="equip-slot-icon">🛡️</span>
+                    <span class="equip-slot-label">Off Hand</span>
+                </div>
+
+                <div class="equip-slot" id="slot-leggings"  data-slot="leggings">
+                    <span class="equip-slot-icon">👖</span>
+                    <span class="equip-slot-label">Legs</span>
+                </div>
+                <div></div>
+                <div class="equip-slot" id="slot-ring"      data-slot="ring">
+                    <span class="equip-slot-icon">💍</span>
+                    <span class="equip-slot-label">Ring</span>
+                </div>
+
+                <div class="equip-slot" id="slot-boots"     data-slot="boots">
+                    <span class="equip-slot-icon">👢</span>
+                    <span class="equip-slot-label">Boots</span>
+                </div>
+                <div></div>
+                <div class="equip-slot" id="slot-amulet"    data-slot="amulet">
+                    <span class="equip-slot-icon">📿</span>
+                    <span class="equip-slot-label">Amulet</span>
+                </div>
+            </div>
+            <div class="equip-stats" id="equipStats">
+                <div class="equip-stat-row"><span>⚔ Attack</span><span class="equip-stat-val" id="eqAtk">1</span></div>
+                <div class="equip-stat-row"><span>🛡 Defense</span><span class="equip-stat-val" id="eqDef">0</span></div>
+                <div class="equip-stat-row"><span>❤ Health</span><span class="equip-stat-val" id="eqHp">100</span></div>
+            </div>
+        </div>
+
+        <div id="containerPanel">
+            <h3>Chest</h3>
+            <div class="inv-grid" id="containerSlots"></div>
+            <div class="inv-section-label">Your Inventory</div>
+            <div class="inv-grid" id="containerInvSlots"></div>
+        </div>
+        <!-- Exploration Map Panel (M key) -->
+        <div id="explorationMapPanel">
+            <div id="explorationMapHeader">
+                <h3>🗺 World Map [M]</h3>
+                <div id="mapControls">
+                    <input id="landmarkNameInput" type="text" placeholder="Landmark name..." maxlength="24">
+                    <button id="mapLandmarkBtn">📍 Save Here</button>
+                    <button id="mapCloseBtn">✕ Close</button>
+                </div>
+            </div>
+            <div id="explorationMapBody">
+                <canvas id="explorationMapCanvas"></canvas>
+                <div id="explorationMapSidebar">
+                    <div id="mapZoomInfo">Scroll to zoom · Drag to pan · Right-click to pin</div>
+                    <div id="landmarksList"></div>
+                    <div id="mapFiddleHint">Move cursor over the map to chart details...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quest Journal (J key) -->
+        <div id="questJournalPanel">
+            <h3>📜 Quest Journal [J]</h3>
+            <div id="questActiveSection">
+                <div class="quest-section-title">Active Quests</div>
+                <div id="questActiveList"></div>
+            </div>
+            <div id="questDoneSection">
+                <div class="quest-section-title">Completed</div>
+                <div id="questDoneList"></div>
+            </div>
+        </div>
+
+        <div id="console" class="hidden"></div>
+        <div id="status">
+            <div>Health: <span id="health">100</span></div>
+            <div>Position: <span id="position">0, 0, 0</span></div>
+            <div>Players: <span id="playerCount">0</span></div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/vox-loader.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

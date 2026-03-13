@@ -1,0 +1,11 @@
+# Deprecated: import from shared.constants instead.
+from .constants import (
+    CHUNK_SIZE, CHUNK_HEIGHT, BLOCK_TYPES, BLOCK_NAMES,
+    ITEM_TYPES, ITEM_NAMES, ITEM_MAX_STACK, MESSAGE_TYPES
+)
+
+BLOCK_SIZE = 1
+GRAVITY = -9.81
+PLAYER_SPEED = 5
+JUMP_FORCE = 8
+INTERACTION_RANGE = 5
