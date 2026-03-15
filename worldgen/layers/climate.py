@@ -4,7 +4,7 @@ Generates temperature, humidity, and other climate parameters.
 """
 
 import math
-from typing import Dict, Any
+from typing import Dict, Any, List
 from ..noise import NoiseGenerator
 from ..coords import WorldSeed
 from ..models.chunk_context import ChunkContext, ChunkGenerationResult, ClimateSample
@@ -12,6 +12,27 @@ from ..models.chunk_context import ChunkContext, ChunkGenerationResult, ClimateS
 
 class ClimateLayer:
     """Generates climate data using noise patterns."""
+    
+    # Climate generation constants
+    LATITUDE_SCALE = 0.0001
+    TEMP_LARGE_SCALE = 0.02
+    TEMP_LOCAL_SCALE = 0.08
+    HUMIDITY_LARGE_SCALE = 0.018
+    HUMIDITY_LOCAL_SCALE = 0.07
+    PRESSURE_SCALE = 0.015
+    WATER_PROXIMITY_SCALE = 0.01
+    
+    # Weight factors for temperature calculation
+    LATITUDE_WEIGHT = 0.4
+    TEMP_LARGE_WEIGHT = 0.3
+    TEMP_LOCAL_WEIGHT = 0.2
+    OCEAN_WEIGHT = 0.1
+    
+    # Weight factors for humidity calculation
+    HUMIDITY_LARGE_WEIGHT = 0.4
+    HUMIDITY_LOCAL_WEIGHT = 0.2
+    WATER_PROXIMITY_WEIGHT = 0.3
+    TEMP_HUMIDITY_WEIGHT = 0.1
     
     def __init__(self, world_seed: WorldSeed):
         self.seed = world_seed.get_layer_seed("climate")
@@ -21,14 +42,19 @@ class ClimateLayer:
         self.humidity_noise = NoiseGenerator(self.seed + 1)
         self.pressure_noise = NoiseGenerator(self.seed + 2)
         self.current_noise = NoiseGenerator(self.seed + 3)
+        self.water_proximity_noise = NoiseGenerator(self.seed + 100)
     
     def apply(self, context: ChunkContext, result: ChunkGenerationResult):
         """Generate climate data for the chunk."""
         chunk_size = context.chunk_size
         
+        # Validate chunk size
+        if chunk_size <= 0:
+            raise ValueError(f"Invalid chunk_size: {chunk_size}")
+        
         # Generate climate maps
         temp_map = self._generate_temperature_map(context)
-        humidity_map = self._generate_humidity_map(context)
+        humidity_map = self._generate_humidity_map(context, temp_map)
         pressure_map = self._generate_pressure_map(context)
         
         # Combine into climate samples
@@ -51,7 +77,7 @@ class ClimateLayer:
         # Update context with averaged climate
         context.climate = self._average_climate(climate_map)
     
-    def _generate_temperature_map(self, context: ChunkContext) -> list:
+    def _generate_temperature_map(self, context: ChunkContext) -> List[List[float]]:
         """Generate temperature map."""
         chunk_size = context.chunk_size
         temp_map = [[0.0 for _ in range(chunk_size)] for _ in range(chunk_size)]
@@ -62,23 +88,17 @@ class ClimateLayer:
                 world_z = context.chunk_z * chunk_size + z
                 
                 # Base temperature from latitude (Z coordinate)
-                latitude_factor = 1.0 - abs(world_z * 0.0001)  # Warmer at equator
-                
-                # Altitude cooling
-                altitude_factor = 1.0
-                if 'heightmap' in context.__dict__:
-                    # Will be updated after terrain generation
-                    pass
+                latitude_factor = 1.0 - abs(world_z * self.LATITUDE_SCALE)
                 
                 # Large-scale temperature patterns
                 large_scale = self.temperature_noise.fractal_noise_2d(
-                    world_x * 0.02, world_z * 0.02,
+                    world_x * self.TEMP_LARGE_SCALE, world_z * self.TEMP_LARGE_SCALE,
                     octaves=3, persistence=0.7
                 )
                 
                 # Local variations
                 local = self.temperature_noise.fractal_noise_2d(
-                    world_x * 0.08, world_z * 0.08,
+                    world_x * self.TEMP_LOCAL_SCALE, world_z * self.TEMP_LOCAL_SCALE,
                     octaves=2, persistence=0.5
                 )
                 
@@ -87,10 +107,10 @@ class ClimateLayer:
                 
                 # Combine factors
                 temperature = (
-                    latitude_factor * 0.4 +
-                    large_scale * 0.3 +
-                    local * 0.2 +
-                    ocean_influence * 0.1
+                    latitude_factor * self.LATITUDE_WEIGHT +
+                    large_scale * self.TEMP_LARGE_WEIGHT +
+                    local * self.TEMP_LOCAL_WEIGHT +
+                    ocean_influence * self.OCEAN_WEIGHT
                 )
                 
                 # Normalize to 0-1
@@ -99,7 +119,7 @@ class ClimateLayer:
         
         return temp_map
     
-    def _generate_humidity_map(self, context: ChunkContext) -> list:
+    def _generate_humidity_map(self, context: ChunkContext, temp_map: List[List[float]]) -> List[List[float]]:
         """Generate humidity map."""
         chunk_size = context.chunk_size
         humidity_map = [[0.0 for _ in range(chunk_size)] for _ in range(chunk_size)]
@@ -111,13 +131,13 @@ class ClimateLayer:
                 
                 # Large-scale humidity patterns
                 large_scale = self.humidity_noise.fractal_noise_2d(
-                    world_x * 0.018, world_z * 0.018,
+                    world_x * self.HUMIDITY_LARGE_SCALE, world_z * self.HUMIDITY_LARGE_SCALE,
                     octaves=4, persistence=0.6
                 )
                 
                 # Local humidity
                 local = self.humidity_noise.fractal_noise_2d(
-                    world_x * 0.07, world_z * 0.07,
+                    world_x * self.HUMIDITY_LOCAL_SCALE, world_z * self.HUMIDITY_LOCAL_SCALE,
                     octaves=2, persistence=0.4
                 )
                 
@@ -125,14 +145,14 @@ class ClimateLayer:
                 water_proximity = self._get_water_proximity(world_x, world_z)
                 
                 # Temperature affects humidity (warmer air holds more moisture)
-                temp_factor = 0.5  # Will be updated after temp generation
+                temp_factor = temp_map[x][z]
                 
                 # Combine factors
                 humidity = (
-                    large_scale * 0.4 +
-                    local * 0.2 +
-                    water_proximity * 0.3 +
-                    temp_factor * 0.1
+                    large_scale * self.HUMIDITY_LARGE_WEIGHT +
+                    local * self.HUMIDITY_LOCAL_WEIGHT +
+                    water_proximity * self.WATER_PROXIMITY_WEIGHT +
+                    temp_factor * self.TEMP_HUMIDITY_WEIGHT
                 )
                 
                 # Normalize to 0-1
@@ -141,7 +161,7 @@ class ClimateLayer:
         
         return humidity_map
     
-    def _generate_pressure_map(self, context: ChunkContext) -> list:
+    def _generate_pressure_map(self, context: ChunkContext) -> List[List[float]]:
         """Generate atmospheric pressure map."""
         chunk_size = context.chunk_size
         pressure_map = [[0.0 for _ in range(chunk_size)] for _ in range(chunk_size)]
@@ -153,7 +173,7 @@ class ClimateLayer:
                 
                 # Pressure systems (high and low pressure areas)
                 pressure = self.pressure_noise.fractal_noise_2d(
-                    world_x * 0.015, world_z * 0.015,
+                    world_x * self.PRESSURE_SCALE, world_z * self.PRESSURE_SCALE,
                     octaves=2, persistence=0.8
                 )
                 
@@ -187,22 +207,34 @@ class ClimateLayer:
     def _get_water_proximity(self, x: int, z: int) -> float:
         """Get proximity to water bodies (placeholder)."""
         # Later: check distance to rivers, lakes, oceans
-        noise = NoiseGenerator(self.seed + 100)
-        proximity = noise.noise_2d(x * 0.01, z * 0.01)
+        proximity = self.water_proximity_noise.noise_2d(x * self.WATER_PROXIMITY_SCALE, z * self.WATER_PROXIMITY_SCALE)
         return (proximity + 1.0) * 0.5
     
-    def _average_climate(self, climate_map) -> ClimateSample:
+    def _average_climate(self, climate_map: List[List[ClimateSample]]) -> ClimateSample:
         """Average climate across the chunk."""
         chunk_size = len(climate_map)
         
-        avg_temp = sum(cell.temperature for row in climate_map for cell in row) / (chunk_size * chunk_size)
-        avg_humidity = sum(cell.humidity for row in climate_map for cell in row) / (chunk_size * chunk_size)
-        avg_drainage = sum(cell.drainage for row in climate_map for cell in row) / (chunk_size * chunk_size)
-        avg_elevation = sum(cell.elevation for row in climate_map for cell in row) / (chunk_size * chunk_size)
+        if chunk_size == 0:
+            raise ValueError("Cannot average empty climate map")
+        
+        # Calculate all averages in a single loop for efficiency
+        total_temp = 0.0
+        total_humidity = 0.0
+        total_drainage = 0.0
+        total_elevation = 0.0
+        cell_count = 0
+        
+        for row in climate_map:
+            for cell in row:
+                total_temp += cell.temperature
+                total_humidity += cell.humidity
+                total_drainage += cell.drainage
+                total_elevation += cell.elevation
+                cell_count += 1
         
         return ClimateSample(
-            temperature=avg_temp,
-            humidity=avg_humidity,
-            drainage=avg_drainage,
-            elevation=avg_elevation
+            temperature=total_temp / cell_count,
+            humidity=total_humidity / cell_count,
+            drainage=total_drainage / cell_count,
+            elevation=total_elevation / cell_count
         )

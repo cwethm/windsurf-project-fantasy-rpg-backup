@@ -46,6 +46,10 @@ class WorldGenerator:
     
     def generate_chunk(self, chunk_x: int, chunk_z: int) -> ChunkGenerationResult:
         """Generate a complete chunk using all layers."""
+        # Validate chunk coordinates
+        if not isinstance(chunk_x, int) or not isinstance(chunk_z, int):
+            raise TypeError(f"Chunk coordinates must be integers: ({chunk_x}, {chunk_z})")
+        
         # Calculate region coordinates
         region_x = WorldCoords.chunk_to_region(chunk_x)
         region_z = WorldCoords.chunk_to_region(chunk_z)

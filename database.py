@@ -424,3 +424,32 @@ class Database:
                         logger.info(f"Cleaned up {cursor.rowcount} expired sessions")
             except Exception as e:
                 logger.error(f"Failed to cleanup expired sessions: {e}")
+    
+    def cleanup_old_item_entities(self, max_age_seconds: int = 300):
+        """Remove item entities older than specified age (default 5 minutes)"""
+        with self.lock:
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cutoff_time = time.time() - max_age_seconds
+                    cursor = conn.execute(
+                        "DELETE FROM item_entities WHERE spawn_time < ?",
+                        (cutoff_time,)
+                    )
+                    conn.commit()
+                    if cursor.rowcount > 0:
+                        logger.info(f"Cleaned up {cursor.rowcount} old item entities")
+                    return cursor.rowcount
+            except Exception as e:
+                logger.error(f"Failed to cleanup old item entities: {e}")
+                return 0
+    
+    def get_item_entity_count(self) -> int:
+        """Get total count of item entities in database"""
+        with self.lock:
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.execute("SELECT COUNT(*) FROM item_entities")
+                    return cursor.fetchone()[0]
+            except Exception as e:
+                logger.error(f"Failed to get item entity count: {e}")
+                return 0

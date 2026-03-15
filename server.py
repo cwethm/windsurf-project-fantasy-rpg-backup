@@ -1667,6 +1667,29 @@ class VoxelServer:
             return
         
         new_position = data.get('position', player.position)
+        new_velocity = data.get('velocity', player.velocity)
+        
+        # Validate position data
+        if not isinstance(new_position, (list, tuple)) or len(new_position) != 3:
+            logger.warning(f"Invalid position format from {client_id}: {new_position}")
+            return
+        
+        # Validate velocity data
+        if not isinstance(new_velocity, (list, tuple)) or len(new_velocity) != 3:
+            logger.warning(f"Invalid velocity format from {client_id}: {new_velocity}")
+            return
+        
+        # Check for NaN or infinite values
+        try:
+            if any(not math.isfinite(v) for v in new_position):
+                logger.warning(f"Non-finite position values from {client_id}: {new_position}")
+                return
+            if any(not math.isfinite(v) for v in new_velocity):
+                logger.warning(f"Non-finite velocity values from {client_id}: {new_velocity}")
+                return
+        except (TypeError, ValueError):
+            logger.warning(f"Invalid numeric values from {client_id}")
+            return
         
         # Validate movement
         if not self.validate_movement(player, new_position):
@@ -1716,6 +1739,22 @@ class VoxelServer:
         position = data.get('position', {})
         block_type = data.get('blockType', BLOCK_TYPES['GRASS'])
         
+        # Validate position data
+        if not position or 'x' not in position or 'y' not in position or 'z' not in position:
+            logger.warning(f"Invalid position data from {client_id}: {position}")
+            return
+        
+        try:
+            x, y, z = int(position['x']), int(position['y']), int(position['z'])
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid coordinate values from {client_id}: {e}")
+            return
+        
+        # Validate block type
+        if not isinstance(block_type, int) or block_type < 0:
+            logger.warning(f"Invalid block type from {client_id}: {block_type}")
+            return
+        
         # Anti-cheat validation
         if not self.validate_block_interaction(player, position):
             return
@@ -1723,12 +1762,7 @@ class VoxelServer:
         if not self.can_place_block(player):
             return
         
-        success = self.world.set_block(
-            int(position['x']), 
-            int(position['y']), 
-            int(position['z']), 
-            block_type
-        )
+        success = self.world.set_block(x, y, z, block_type)
         
         if success:
             await self.broadcast(MESSAGE_TYPES['WORLD_UPDATE'], {
@@ -1745,6 +1779,17 @@ class VoxelServer:
         
         position = data.get('position', {})
         
+        # Validate position data
+        if not position or 'x' not in position or 'y' not in position or 'z' not in position:
+            logger.warning(f"Invalid position data from {client_id}: {position}")
+            return
+        
+        try:
+            x, y, z = int(position['x']), int(position['y']), int(position['z'])
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid coordinate values from {client_id}: {e}")
+            return
+        
         # Anti-cheat validation
         if not self.validate_block_interaction(player, position):
             return
@@ -1753,19 +1798,10 @@ class VoxelServer:
             return
         
         logger.info(f"Player {client_id} breaking block at {position}")
-        block_type = self.world.get_block(
-            int(position['x']), 
-            int(position['y']), 
-            int(position['z'])
-        )
+        block_type = self.world.get_block(x, y, z)
         logger.info(f"Block type at position: {block_type}")
         
-        success = self.world.set_block(
-            int(position['x']), 
-            int(position['y']), 
-            int(position['z']), 
-            BLOCK_TYPES['AIR']
-        )
+        success = self.world.set_block(x, y, z, BLOCK_TYPES['AIR'])
         
         if success and block_type != BLOCK_TYPES['AIR']:
             # Spawn item entity for the block
@@ -1774,13 +1810,7 @@ class VoxelServer:
                 logger.info(f"Spawning item entity type {item_type} at {position}")
                 player = self.players.get(client_id)
                 harvester_id = client_id if player and player.item_lock_enabled else None
-                self.world.spawn_item_entity(
-                    int(position['x']), 
-                    int(position['y']), 
-                    int(position['z']),
-                    item_type,
-                    harvester_id
-                )
+                self.world.spawn_item_entity(x, y, z, item_type, harvester_id)
                 await self.broadcast(MESSAGE_TYPES['SPAWN_ITEM_ENTITY'], {
                     'x': position['x'],
                     'y': position['y'],
@@ -2857,6 +2887,9 @@ class VoxelServer:
     
     async def update_loop(self):
         """Main server update loop"""
+        last_cleanup_time = time.time()
+        cleanup_interval = 60  # Cleanup every 60 seconds
+        
         while self.running:
             # Update chunk loading
             self.update_chunk_loading()
@@ -2864,6 +2897,12 @@ class VoxelServer:
             # Save world periodically
             if time.time() - self.last_save_time >= self.save_interval:
                 self.save_world()
+            
+            # Cleanup old data periodically
+            if time.time() - last_cleanup_time >= cleanup_interval:
+                self.db.cleanup_expired_sessions()
+                self.db.cleanup_old_item_entities(max_age_seconds=300)  # 5 minutes
+                last_cleanup_time = time.time()
             
             # Wait before next update
             await asyncio.sleep(5)

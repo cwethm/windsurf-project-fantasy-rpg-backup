@@ -2303,7 +2303,7 @@ class VoxelGame {
   }
   
   // Enemy methods
-  spawnEnemy(data) {
+  async spawnEnemy(data) {
     const existing = this.enemies.get(data.id);
     if (existing) return;
     const enemy = new Enemy(data.id, data.type, {
@@ -2313,6 +2313,7 @@ class VoxelGame {
       enemy.health = data.health;
       enemy.maxHealth = data.max_health || data.health;
     }
+    await enemy.createMesh();
     this.enemies.set(data.id, enemy);
     this.scene.add(enemy.mesh);
   }
@@ -3515,24 +3516,54 @@ class Enemy {
     this.state = 'idle'; // idle, chasing, attacking
     this.target = null;
     this.mesh = null;
-    this.createMesh();
+    // createMesh will be called asynchronously after construction
   }
   
-  createMesh() {
-    // Make bears larger
-    const size = this.type === 'bear' ? 1.5 : 0.8;
-    const height = this.type === 'bear' ? 2.5 : 1.8;
-    const geometry = new THREE.BoxGeometry(size, height, size);
-    const material = new THREE.MeshLambertMaterial({ 
-      color: this.type === 'zombie' ? 0x2d5016 : 
-            this.type === 'skeleton' ? 0xf0f0f0 : 
-            this.type === 'bear' ? 0x8B4513 : // Brown color for bear
-            0x4a7c7c
-    });
-    this.mesh = new THREE.Mesh(geometry, material);
+  async createMesh() {
+    try {
+      // Map mob types to their vox file names
+      const voxFileMap = {
+        'slime': 'green_slime',
+        'zombie': 'zombie',
+        'skeleton': 'skeleton',
+        'villager': 'villager'
+        // Add more mappings as we generate them
+      };
+      
+      const voxFileName = voxFileMap[this.type] || this.type;
+      const voxPath = `assets/models/${voxFileName}.vox`;
+      const voxData = await VOXLoader.load(voxPath);
+      const geometry = VOXLoader.createGeometry(voxData);
+      const material = new THREE.MeshLambertMaterial({ 
+        vertexColors: true
+      });
+      this.mesh = new THREE.Mesh(geometry, material);
+    } catch (error) {
+      console.warn(`Failed to load vox model for ${this.type}, using fallback:`, error);
+      // Fallback to box mesh if vox model fails
+      const size = this.type === 'bear' ? 1.5 : 0.8;
+      const height = this.type === 'bear' ? 2.5 : 1.8;
+      const geometry = new THREE.BoxGeometry(size, height, size);
+      const material = new THREE.MeshLambertMaterial({ 
+        color: this.type === 'zombie' ? 0x2d5016 : 
+              this.type === 'skeleton' ? 0xf0f0f0 : 
+              this.type === 'bear' ? 0x8B4513 : // Brown color for bear
+              this.type === 'slime' ? 0x00ff00 : // Green for slime
+              0x4a7c7c
+      });
+      this.mesh = new THREE.Mesh(geometry, material);
+    }
+    
     this.mesh.position.copy(this.position);
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
+    
+    // Scale the mesh appropriately
+    const scale = this.type === 'slime' ? 0.5 : 
+                  this.type === 'spider' ? 0.4 :
+                  this.type === 'rabbit' || this.type === 'chicken' ? 0.3 :
+                  this.type === 'bear' || this.type === 'troll' ? 1.2 : 0.8;
+    this.mesh.scale.set(scale, scale, scale);
     
     // Add health bar
     const barGeometry = new THREE.PlaneGeometry(1, 0.1);
@@ -3542,7 +3573,7 @@ class Enemy {
       opacity: 0.8
     });
     this.healthBar = new THREE.Mesh(barGeometry, barMaterial);
-    this.healthBar.position.y = this.type === 'bear' ? 1.8 : 1.2;
+    this.healthBar.position.y = (this.type === 'bear' ? 1.8 : 1.2) * scale;
     this.mesh.add(this.healthBar);
     
     // Add floating mob indicator
