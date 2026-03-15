@@ -1168,7 +1168,7 @@ class VoxelGame {
       0.1, 
       500
     );
-    this.camera.position.set(0, 80, 5);
+    this.camera.position.set(0, 40, 5);
     
     // Orbit camera state
     this.orbitMode = false;
@@ -1386,7 +1386,6 @@ class VoxelGame {
       const blockType = this.world.getBlock(target.position.x, target.position.y, target.position.z);
       if (blockType !== BLOCK_TYPES.AIR) {
         const hardness = BLOCK_HARDNESS[blockType] || 1.0;
-        console.log('Mining block type', blockType, 'hardness:', hardness);
         this.mining = {
           position: target.position,
           startTime: Date.now(),
@@ -1490,12 +1489,7 @@ class VoxelGame {
   handleServerMessage(message) {
     const messageType = message.type;
     
-    // Debug log all message types except player_move, block_update, and world_update
-    if (messageType !== MESSAGE_TYPES.PLAYER_MOVE && 
-        messageType !== MESSAGE_TYPES.BLOCK_UPDATE && 
-        messageType !== MESSAGE_TYPES.WORLD_UPDATE) {
-      console.log('Received message type:', messageType, 'data:', message.data);
-    }
+    // Silently handle most message types
     
     switch (messageType) {
       case MESSAGE_TYPES.GAME_STATE:
@@ -1606,6 +1600,9 @@ class VoxelGame {
         break;
       case MESSAGE_TYPES.MOB_ATTACK:
         this.handleMobAttack(message.data);
+        break;
+      case MESSAGE_TYPES.COMBAT_DAMAGE:
+        this.handleCombatDamage(message.data);
         break;
       case MESSAGE_TYPES.EQUIPMENT_UPDATE:
         this.equipmentPanel.applyUpdate(message.data);
@@ -1808,7 +1805,7 @@ class VoxelGame {
       this.updateCamera();
       this.physics.update(this.player, this.world);
       this.raycaster.update(this.camera, this.scene);
-      this.ui.updateTargetName(this.raycaster, this.camera, this.world);
+      this.ui.updateTargetName(this.raycaster, this.camera, this.world, this);
       this.updateMining();
       this.updateItemEntities();
       this.updateEnemies(deltaTime);
@@ -2060,7 +2057,7 @@ class VoxelGame {
   updateEnemies(deltaTime) {
     // Update enemy positions and behaviors
     for (const [id, enemy] of this.enemies) {
-      if (enemy.health <= 0) continue;
+      if (enemy.health <= 0 || !enemy.mesh) continue;
       
       // Simple AI: move towards player if close enough
       const distance = enemy.position.distanceTo(this.player.position);
@@ -2075,7 +2072,8 @@ class VoxelGame {
       }
       
       // Simple floating animation
-      enemy.mesh.position.y = enemy.position.y + Math.sin(Date.now() * 0.002 + id) * 0.1;
+      const idHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      enemy.mesh.position.y = enemy.position.y + Math.sin(Date.now() * 0.002 + idHash) * 0.1;
     }
   }
 
@@ -2313,16 +2311,35 @@ class VoxelGame {
       enemy.health = data.health;
       enemy.maxHealth = data.max_health || data.health;
     }
-    await enemy.createMesh();
     this.enemies.set(data.id, enemy);
-    this.scene.add(enemy.mesh);
+    try {
+      await enemy.createMesh();
+      if (!enemy.mesh) {
+        console.error(`Failed to create mesh for enemy ${data.id}`);
+        return;
+      }
+      this.scene.add(enemy.mesh);
+      console.log(`Spawned ${enemy.type} at position:`, enemy.mesh.position, 'Camera at:', this.camera.position, 'Distance:', enemy.mesh.position.distanceTo(this.camera.position));
+      console.log(`Mesh details: parent=${!!enemy.mesh.parent}, visible=${enemy.mesh.visible}, frustumCulled=${enemy.mesh.frustumCulled}, renderOrder=${enemy.mesh.renderOrder}, layers=${enemy.mesh.layers.mask}`);
+    } catch (error) {
+      console.error(`Error spawning enemy ${data.id}:`, error);
+    }
   }
   
   despawnEnemy(data) {
     const enemy = this.enemies.get(data.mobId);
-    if (enemy) {
+    if (enemy && enemy.mesh) {
       this.scene.remove(enemy.mesh);
       if (enemy.mesh.geometry) enemy.mesh.geometry.dispose();
+      if (enemy.mesh.material) enemy.mesh.material.dispose();
+      if (enemy.healthBar) {
+        if (enemy.healthBar.geometry) enemy.healthBar.geometry.dispose();
+        if (enemy.healthBar.material) enemy.healthBar.material.dispose();
+      }
+      if (enemy.mobIndicator) {
+        if (enemy.mobIndicator.geometry) enemy.mobIndicator.geometry.dispose();
+        if (enemy.mobIndicator.material) enemy.mobIndicator.material.dispose();
+      }
       this.enemies.delete(data.mobId);
     }
   }
@@ -2332,13 +2349,17 @@ class VoxelGame {
     if (!enemy) return;
     if (data.position) {
       enemy.position.set(data.position[0], data.position[1], data.position[2]);
-      enemy.mesh.position.copy(enemy.position);
+      if (enemy.mesh) {
+        enemy.mesh.position.copy(enemy.position);
+      }
     }
-    if (data.health !== undefined) {
+    if (data.health !== undefined && enemy.maxHealth > 0) {
       enemy.health = data.health;
       enemy.maxHealth = data.max_health || enemy.maxHealth;
-      enemy.healthBar.scale.x = Math.max(0, enemy.health / enemy.maxHealth);
-      enemy.healthBar.position.x = -(1 - enemy.health / enemy.maxHealth) / 2;
+      if (enemy.healthBar) {
+        enemy.healthBar.scale.x = Math.max(0, enemy.health / enemy.maxHealth);
+        enemy.healthBar.position.x = -(1 - enemy.health / enemy.maxHealth) / 2;
+      }
     }
     if (data.state) enemy.state = data.state;
   }
@@ -2366,8 +2387,79 @@ class VoxelGame {
       setTimeout(() => { flash.style.boxShadow = ''; }, 300); 
     }
     
+    // Debug: Check if attacker mob exists and is visible
+    let mobInfo = 'unknown';
+    this.enemies.forEach((enemy, id) => {
+      if (enemy.type === data.attacker || id === data.attacker) {
+        const hasMesh = !!enemy.mesh;
+        const isVisible = enemy.mesh ? enemy.mesh.visible : false;
+        const inScene = enemy.mesh ? (enemy.mesh.parent === this.scene) : false;
+        mobInfo = `${enemy.type} (mesh:${hasMesh}, visible:${isVisible}, inScene:${inScene})`;
+      }
+    });
+    
     // Log to console
-    console.log(`Took ${data.damage} damage from ${data.attacker}`);
+    console.log(`Took ${data.damage} damage from ${data.attacker} [${mobInfo}]`);
+  }
+  
+  handleCombatDamage(data) {
+    // Show damage feedback when player hits a mob
+    const mobType = data.mobType || 'enemy';
+    const damage = data.damage || 0;
+    const isCritical = data.isCritical || false;
+    const mobHealth = data.mobHealth || 0;
+    
+    // Show hit feedback
+    this.showHitFeedback(damage, mobType, isCritical, mobHealth);
+    
+    console.log(`Hit ${mobType} for ${damage} damage${isCritical ? ' (CRITICAL!)' : ''} (${mobHealth} HP remaining)`);
+  }
+  
+  showHitFeedback(damage, mobType, isCritical, mobHealth) {
+    // Create hit feedback element
+    const hitEl = document.createElement('div');
+    hitEl.style.cssText = `
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: ${isCritical ? 'rgba(255, 215, 0, 0.9)' : 'rgba(255, 100, 0, 0.9)'};
+      color: ${isCritical ? '#ff0000' : 'white'};
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: ${isCritical ? '28px' : '22px'};
+      font-weight: bold;
+      z-index: 1000;
+      pointer-events: none;
+      animation: hitPulse 0.6s ease-out;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      border: ${isCritical ? '3px solid #ff0000' : '2px solid rgba(255,255,255,0.5)'};
+    `;
+    
+    const critText = isCritical ? ' CRITICAL!' : '';
+    const healthText = mobHealth > 0 ? ` (${mobHealth} HP)` : ' (DEFEATED!)';
+    hitEl.textContent = `${damage} DMG${critText}${healthText}`;
+    
+    document.body.appendChild(hitEl);
+    
+    // Add animation keyframes if not exists
+    if (!document.getElementById('hitFeedbackStyle')) {
+      const style = document.createElement('style');
+      style.id = 'hitFeedbackStyle';
+      style.textContent = `
+        @keyframes hitPulse {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1) translateY(-20px); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Remove after animation
+    setTimeout(() => {
+      hitEl.remove();
+    }, 600);
   }
   
   showDamageAlert(damage, attacker) {
@@ -3520,50 +3612,41 @@ class Enemy {
   }
   
   async createMesh() {
+    const voxFileMap = {
+      zombie: 'zombie', skeleton: 'skeleton', bear: 'bear', slime: 'slime',
+      boar: 'boar', spider: 'spider', cow: 'cow', goblin: 'goblin',
+      sheep: 'sheep', rabbit: 'rabbit', deer: 'deer', chicken: 'chicken', troll: 'troll'
+    };
+    
+    const voxFile = voxFileMap[this.type] || this.type;
+    const voxPath = `assets/models/${voxFile}.vox`;
+    
     try {
-      // Map mob types to their vox file names
-      const voxFileMap = {
-        'slime': 'green_slime',
-        'zombie': 'zombie',
-        'skeleton': 'skeleton',
-        'villager': 'villager'
-        // Add more mappings as we generate them
-      };
-      
-      const voxFileName = voxFileMap[this.type] || this.type;
-      const voxPath = `assets/models/${voxFileName}.vox`;
       const voxData = await VOXLoader.load(voxPath);
       const geometry = VOXLoader.createGeometry(voxData);
-      const material = new THREE.MeshLambertMaterial({ 
-        vertexColors: true
-      });
+      const material = new THREE.MeshLambertMaterial({ vertexColors: true });
       this.mesh = new THREE.Mesh(geometry, material);
+      
+      // Scale and position for VOX models
+      const scale = (this.type === 'zombie' || this.type === 'skeleton' || this.type === 'goblin') ? 0.056 :
+                   (this.type === 'bear' || this.type === 'troll') ? 0.08 : 0.056;
+      this.mesh.scale.set(scale, scale, scale);
+      this.mesh.position.copy(this.position);
+      this.mesh.castShadow = true;
+      this.mesh.receiveShadow = true;
     } catch (error) {
-      console.warn(`Failed to load vox model for ${this.type}, using fallback:`, error);
-      // Fallback to box mesh if vox model fails
-      const size = this.type === 'bear' ? 1.5 : 0.8;
-      const height = this.type === 'bear' ? 2.5 : 1.8;
+      console.warn(`Failed to load VOX model for ${this.type}, using fallback box:`, error);
+      const size = (this.type === 'bear' || this.type === 'troll') ? 1.5 : 0.8;
+      const height = (this.type === 'bear' || this.type === 'troll') ? 2.5 : 1.8;
       const geometry = new THREE.BoxGeometry(size, height, size);
       const material = new THREE.MeshLambertMaterial({ 
-        color: this.type === 'zombie' ? 0x2d5016 : 
-              this.type === 'skeleton' ? 0xf0f0f0 : 
-              this.type === 'bear' ? 0x8B4513 : // Brown color for bear
-              this.type === 'slime' ? 0x00ff00 : // Green for slime
-              0x4a7c7c
+        color: this.type === 'spider' ? 0x8B4513 : this.type === 'cow' ? 0xFFFFFF : 0xFF0000
       });
       this.mesh = new THREE.Mesh(geometry, material);
+      this.mesh.position.copy(this.position);
+      this.mesh.castShadow = true;
+      this.mesh.receiveShadow = true;
     }
-    
-    this.mesh.position.copy(this.position);
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-    
-    // Scale the mesh appropriately
-    const scale = this.type === 'slime' ? 0.5 : 
-                  this.type === 'spider' ? 0.4 :
-                  this.type === 'rabbit' || this.type === 'chicken' ? 0.3 :
-                  this.type === 'bear' || this.type === 'troll' ? 1.2 : 0.8;
-    this.mesh.scale.set(scale, scale, scale);
     
     // Add health bar
     const barGeometry = new THREE.PlaneGeometry(1, 0.1);
@@ -3573,7 +3656,9 @@ class Enemy {
       opacity: 0.8
     });
     this.healthBar = new THREE.Mesh(barGeometry, barMaterial);
-    this.healthBar.position.y = (this.type === 'bear' ? 1.8 : 1.2) * scale;
+    // Position health bar above the mesh
+    const healthBarHeight = this.type === 'bear' ? 2.0 : 1.5;
+    this.healthBar.position.y = healthBarHeight;
     this.mesh.add(this.healthBar);
     
     // Add floating mob indicator
@@ -3590,8 +3675,12 @@ class Enemy {
     });
     this.mobIndicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
     
-    // Position it above the mob's head
-    const indicatorHeight = this.type === 'bear' ? 3.2 : 2.5;
+    // Position it above the mob's head - account for mesh scale
+    const scale = this.type === 'slime' ? 0.5 : 
+                  this.type === 'spider' ? 0.4 :
+                  this.type === 'rabbit' || this.type === 'chicken' ? 0.3 :
+                  this.type === 'bear' || this.type === 'troll' ? 1.2 : 0.8;
+    const indicatorHeight = (this.type === 'bear' ? 3.2 : 2.5) * scale;
     this.mobIndicator.position.set(0, indicatorHeight, 0);
     this.mesh.add(this.mobIndicator);
     
@@ -3773,14 +3862,13 @@ class StatusEffects {
       properties: properties
     });
     
-    console.log(`Applied ${effectName} to entity ${entityId} for ${duration}ms`);
+    // Effect applied
   }
   
   removeEffect(entityId, effectName) {
     const entityEffects = this.effects.get(entityId);
     if (entityEffects) {
       entityEffects.delete(effectName);
-      console.log(`Removed ${effectName} from entity ${entityId}`);
     }
   }
   
@@ -4155,29 +4243,31 @@ class Raycaster {
     };
   }
   
-  getTargetEnemy(camera, scene) {
-    if (!window.game || !window.game.enemies) return null;
+  getTargetEnemy(camera, game) {
+    if (!game || !game.enemies) {
+      return null;
+    }
     
     // Cast ray from camera center
     this.raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     
     // Check enemy meshes
     const enemyMeshes = [];
-    window.game.enemies.forEach((enemy, id) => {
+    game.enemies.forEach((enemy, id) => {
       if (enemy.mesh) {
         enemyMeshes.push(enemy.mesh);
         enemyMeshes[enemyMeshes.length - 1].userData = { enemyId: id, enemy: enemy };
       }
     });
     
-    const intersects = this.raycaster.intersectObjects(enemyMeshes);
+    const intersects = this.raycaster.intersectObjects(enemyMeshes, true);
     
     if (intersects.length > 0) {
       const intersection = intersects[0];
       const distance = camera.position.distanceTo(intersection.point);
       
-      // Check if within attack range (4 blocks)
-      if (distance <= 4) {
+      // Check if within viewing range (increased to 10 blocks for visibility)
+      if (distance <= 10) {
         return {
           enemy: intersection.object.userData.enemy,
           distance: distance,
@@ -5470,7 +5560,26 @@ class UI {
     this._lastTargetType = -1;
   }
 
-  updateTargetName(raycaster, camera, world) {
+  updateTargetName(raycaster, camera, world, game) {
+    // Check for mobs first (higher priority than blocks)
+    const targetEnemy = raycaster.getTargetEnemy(camera, game);
+    
+    if (targetEnemy && targetEnemy.enemy) {
+      const mobType = targetEnemy.enemy.type;
+      const displayName = mobType.charAt(0).toUpperCase() + mobType.slice(1);
+      const targetKey = `mob_${mobType}`;
+      
+      if (targetKey !== this._lastTargetType) {
+        if (this.targetNameEl) {
+          this.targetNameEl.textContent = displayName;
+          this.targetNameEl.classList.remove('hidden');
+        }
+        this._lastTargetType = targetKey;
+      }
+      return;
+    }
+    
+    // Check for blocks
     const target = raycaster.getTargetBlock(camera, null);
     if (!target) {
       if (this.targetNameEl) this.targetNameEl.classList.add('hidden');

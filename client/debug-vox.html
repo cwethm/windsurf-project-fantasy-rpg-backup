@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VOX Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #222; color: #0f0; }
+        .error { color: #f00; }
+        .warn { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>VOX File Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = msg;
+            output.appendChild(div);
+        }
+        
+        async function debugVOX() {
+            try {
+                const response = await fetch('assets/models/green_slime.vox');
+                const arrayBuffer = await response.arrayBuffer();
+                const dataView = new DataView(arrayBuffer);
+                
+                log(`File size: ${arrayBuffer.byteLength} bytes`);
+                
+                // Read header
+                const magic = String.fromCharCode(
+                    dataView.getUint8(0),
+                    dataView.getUint8(1),
+                    dataView.getUint8(2),
+                    dataView.getUint8(3)
+                );
+                log(`Magic: "${magic}"`);
+                
+                const version = dataView.getUint32(4, true);
+                log(`Version: ${version}`);
+                
+                let offset = 8;
+                let chunkNum = 0;
+                
+                while (offset < arrayBuffer.byteLength) {
+                    const chunkId = String.fromCharCode(
+                        dataView.getUint8(offset),
+                        dataView.getUint8(offset + 1),
+                        dataView.getUint8(offset + 2),
+                        dataView.getUint8(offset + 3)
+                    );
+                    
+                    const chunkSize = dataView.getUint32(offset + 4, true);
+                    const childSize = dataView.getUint32(offset + 8, true);
+                    
+                    log(`\nChunk ${chunkNum}: "${chunkId}"`);
+                    log(`  Offset: ${offset}`);
+                    log(`  Content size: ${chunkSize}`);
+                    log(`  Child size: ${childSize}`);
+                    
+                    offset += 12;
+                    
+                    if (chunkId === 'SIZE') {
+                        const x = dataView.getInt32(offset, true);
+                        const y = dataView.getInt32(offset + 4, true);
+                        const z = dataView.getInt32(offset + 8, true);
+                        log(`  Dimensions: ${x}x${y}x${z}`);
+                    } else if (chunkId === 'XYZI') {
+                        const numVoxels = dataView.getUint32(offset, true);
+                        log(`  Num voxels: ${numVoxels}`);
+                        
+                        // Read first few voxels
+                        for (let i = 0; i < Math.min(5, numVoxels); i++) {
+                            const voxOffset = offset + 4 + (i * 4);
+                            const x = dataView.getUint8(voxOffset);
+                            const y = dataView.getUint8(voxOffset + 1);
+                            const z = dataView.getUint8(voxOffset + 2);
+                            const c = dataView.getUint8(voxOffset + 3);
+                            log(`    Voxel ${i}: (${x}, ${y}, ${z}) color=${c}`);
+                        }
+                    }
+                    
+                    offset += chunkSize;
+                    offset += childSize;
+                    chunkNum++;
+                    
+                    if (chunkNum > 20) {
+                        log('\n[Stopping after 20 chunks]', 'warn');
+                        break;
+                    }
+                }
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        debugVOX();
+    </script>
+</body>
+</html>

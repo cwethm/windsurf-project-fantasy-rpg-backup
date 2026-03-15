@@ -54,15 +54,20 @@ class VOXLoader {
             offset += 4;
             
             const chunkEnd = offset + chunkSize;
+            const childEnd = chunkEnd + childSize;
             
             switch (chunkId) {
+                case 'MAIN':
+                    // MAIN is a container - don't skip, process children
+                    break;
+                    
                 case 'SIZE':
                     size = [
                         dataView.getInt32(offset, true),
                         dataView.getInt32(offset + 4, true),
                         dataView.getInt32(offset + 8, true)
                     ];
-                    offset += 12;
+                    offset = chunkEnd;
                     break;
                     
                 case 'XYZI':
@@ -77,6 +82,7 @@ class VOXLoader {
                             colorIndex: dataView.getUint8(offset++)
                         });
                     }
+                    offset = chunkEnd;
                     break;
                     
                 case 'RGBA':
@@ -88,19 +94,13 @@ class VOXLoader {
                         const a = dataView.getUint8(offset++);
                         palette[i] = [r, g, b, a];
                     }
+                    offset = chunkEnd;
                     break;
                     
                 default:
-                    // Skip unknown chunks
-                    offset = chunkEnd;
+                    // Skip unknown chunks (both content and children)
+                    offset = childEnd;
                     break;
-            }
-            
-            offset = chunkEnd;
-            
-            // Skip child chunks if any
-            if (childSize > 0) {
-                offset += childSize;
             }
         }
         

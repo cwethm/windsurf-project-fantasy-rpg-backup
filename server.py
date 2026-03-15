@@ -17,7 +17,10 @@ from worldgen.world_generator import WorldGenerator
 from shared.constants import BLOCK_TYPES, ITEM_TYPES, ITEM_NAMES, ITEM_MAX_STACK, MESSAGE_TYPES, CHUNK_SIZE, CHUNK_HEIGHT
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)s:%(name)s:%(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Anti-cheat constants
@@ -709,22 +712,6 @@ class Player:
         old_health = self.health
         self.health = max(0, self.health - actual_damage)
         self.last_damage_time = current_time
-        
-        # Log damage details
-        attacker_name = "Unknown"
-        if attacker_id:
-            if attacker_id in self.world.players:
-                attacker_name = self.world.players[attacker_id].username
-            else:
-                # Check if it's a mob
-                for mob in self.world.mobs.values():
-                    if mob.id == attacker_id:
-                        attacker_name = mob.type
-                        break
-        
-        logger.info(f"PLAYER DAMAGE: {self.username} took {actual_damage:.1f} damage (raw: {damage:.1f}) "
-                   f"from {attacker_name}. HP: {old_health:.1f} → {self.health:.1f}. "
-                   f"Armor reduction: {armor_reduction*100:.1f}%")
         
         return self.health <= 0
     
@@ -1604,6 +1591,11 @@ class VoxelServer:
                 'rotation': npc.rotation
             })
         
+        # Send existing mobs to client
+        logger.info(f"Sending {len(self.mob_manager.mobs)} existing mobs to client {client_id}")
+        for mob_id, mob in self.mob_manager.mobs.items():
+            await self.send_to_client(client_id, MESSAGE_TYPES['MOB_SPAWN'], mob.to_dict())
+        
         # Send inventory
         await self.send_to_client(client_id, MESSAGE_TYPES['INVENTORY_UPDATE'],
             player.inventory.to_dict())
@@ -1705,7 +1697,7 @@ class VoxelServer:
         old_chunk_z = int(player.position[2] // CHUNK_SIZE)
         
         player.position = new_position
-        player.velocity = data.get('velocity', player.velocity)
+        player.velocity = new_velocity
         
         new_chunk_x = int(player.position[0] // CHUNK_SIZE)
         new_chunk_z = int(player.position[2] // CHUNK_SIZE)
@@ -2876,7 +2868,7 @@ class VoxelServer:
                         self.players, self.world, self, time.time()
                     )
                 except Exception as e:
-                    logger.error(f"Mob update error: {e}")
+                    logger.error(f"Mob update error: {e}", exc_info=True)
     
     def _find_client_by_player_id(self, player_id: str) -> Optional[str]:
         """Return the client_id associated with a player_id."""
@@ -3001,9 +2993,9 @@ class MobManager:
         self.mobs: Dict[str, Mob] = {}
         self._next_id = 1
         self.max_mobs = 60
-        self.spawn_dist_min = 10.0
-        self.spawn_dist_max = 28.0
-        self.despawn_dist   = 52.0
+        self.spawn_dist_min = 20.0
+        self.spawn_dist_max = 40.0
+        self.despawn_dist   = 70.0
         self.last_spawn_time = 0.0
         self.spawn_interval  = 8.0    # seconds between spawn attempts
         self.tick_dt         = 0.35   # matches mob_update_loop sleep
@@ -3071,8 +3063,9 @@ class MobManager:
         nearest_dist = float('inf')
         for player in players.values():
             dx = player.position[0] - mob.position[0]
+            dy = player.position[1] - mob.position[1]
             dz = player.position[2] - mob.position[2]
-            dist = math.sqrt(dx*dx + dz*dz)
+            dist = math.sqrt(dx*dx + dy*dy + dz*dz)
             if dist < nearest_dist:
                 nearest_dist = dist
                 nearest_player = player
@@ -3127,6 +3120,18 @@ class MobManager:
         if not mob:
             return False
         died = mob.take_damage(damage)
+        
+        # Send damage feedback to attacker
+        if attacker_id:
+            await server.send_to_client(attacker_id, MESSAGE_TYPES['COMBAT_DAMAGE'], {
+                'mobId': mob_id,
+                'mobType': mob.type,
+                'damage': damage,
+                'mobHealth': mob.health,
+                'mobMaxHealth': mob.max_health,
+                'isCritical': False  # TODO: Add critical hit logic
+            })
+        
         # Send health update to all clients
         await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
             'mobId': mob_id,

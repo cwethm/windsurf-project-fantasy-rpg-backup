@@ -66,6 +66,7 @@ PART_COLORS = {
     "feathers": 15,
     "horn": 16,
     "tusk": 17,
+    "beak": 18,
 }
 
 # -------------------------
@@ -97,6 +98,13 @@ BIPED_SKINS: Dict[str, List[RGBA]] = {
         PART_COLORS["bone"]: (200, 190, 180, 255),
         PART_COLORS["armor"]: (80, 80, 90, 255),
         PART_COLORS["clothing_dark"]: (40, 40, 45, 255),
+    }),
+    "villager_tan": make_palette({
+        PART_COLORS["skin"]: (210, 180, 140, 255),
+        PART_COLORS["clothing_primary"]: (139, 90, 43, 255),
+        PART_COLORS["clothing_secondary"]: (101, 67, 33, 255),
+        PART_COLORS["clothing_dark"]: (61, 43, 31, 255),
+        PART_COLORS["leather"]: (101, 67, 33, 255),
     }),
 }
 
@@ -372,6 +380,20 @@ BIPED_PRESETS: Dict[str, BipedSpec] = {
         bbox=(20, 28, 20),
         eye_height=22,
     ),
+    "villager": BipedSpec(
+        family="biped",
+        name="villager",
+        skin="villager_tan",
+        height=20,
+        shoulder_width=6,
+        body_mass=2,
+        posture_slouch=0.0,
+        limb_thickness=2,
+        head_size=4,
+        has_clothing=True,
+        bbox=(12, 20, 12),
+        eye_height=16,
+    ),
 }
 
 QUADRUPED_PRESETS: Dict[str, QuadrupedSpec] = {
@@ -606,28 +628,67 @@ class VoxelModel:
                         self.set_voxel(x, y, z, color)
 
     def add_line(self, start: Vec3, end: Vec3, color: int, thickness: int = 1) -> None:
-        """Add a thick line between two points using simple line algorithm."""
+        """Add a thick line between two points using 3D Bresenham algorithm."""
         x1, y1, z1 = start
         x2, y2, z2 = end
         
         points = []
-        dx, dy, dz = abs(x2 - x1), abs(y2 - y1), abs(z2 - z1)
-        sx, sy, sz = 1 if x1 < x2 else -1, 1 if y1 < y2 else -1, 1 if z1 < z2 else -1
-        err1, err2 = dy - dz, dz - dx
-        err3 = dx - dy
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        dz = abs(z2 - z1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        sz = 1 if z1 < z2 else -1
         
-        while True:
-            points.append((x1, y1, z1))
-            if x1 == x2 and y1 == y2 and z1 == z2:
-                break
-            
-            e3 = 2 * err3
-            if e3 > -dx:
-                err3 -= dx
+        # Determine driving axis
+        if dx >= dy and dx >= dz:
+            # X is driving axis
+            err_y = 2 * dy - dx
+            err_z = 2 * dz - dx
+            while x1 != x2:
+                points.append((x1, y1, z1))
+                if err_y > 0:
+                    y1 += sy
+                    err_y -= 2 * dx
+                if err_z > 0:
+                    z1 += sz
+                    err_z -= 2 * dx
+                err_y += 2 * dy
+                err_z += 2 * dz
                 x1 += sx
-            if e3 < dy:
-                err3 += dy
+        elif dy >= dx and dy >= dz:
+            # Y is driving axis
+            err_x = 2 * dx - dy
+            err_z = 2 * dz - dy
+            while y1 != y2:
+                points.append((x1, y1, z1))
+                if err_x > 0:
+                    x1 += sx
+                    err_x -= 2 * dy
+                if err_z > 0:
+                    z1 += sz
+                    err_z -= 2 * dy
+                err_x += 2 * dx
+                err_z += 2 * dz
                 y1 += sy
+        else:
+            # Z is driving axis
+            err_x = 2 * dx - dz
+            err_y = 2 * dy - dz
+            while z1 != z2:
+                points.append((x1, y1, z1))
+                if err_x > 0:
+                    x1 += sx
+                    err_x -= 2 * dz
+                if err_y > 0:
+                    y1 += sy
+                    err_y -= 2 * dz
+                err_x += 2 * dx
+                err_y += 2 * dy
+                z1 += sz
+        
+        # Add final point
+        points.append((x1, y1, z1))
         
         # Thicken the line
         for px, py, pz in points:
@@ -1217,25 +1278,25 @@ class EntityVoxGenerator:
         # MAIN chunk
         main_data = b''
         
-        # SIZE chunk
+        # SIZE chunk (content size: 12, child size: 0)
         sx, sy, sz = model.size
-        size_chunk = b'SIZE' + struct.pack('<I', 12) + struct.pack('<iii', sx, sy, sz)
+        size_chunk = b'SIZE' + struct.pack('<I', 12) + struct.pack('<I', 0) + struct.pack('<iii', sx, sy, sz)
         main_data += size_chunk
         
-        # XYZI chunk (voxel data)
-        xyzi_chunk = b'XYZI' + struct.pack('<I', chunk_size) + struct.pack('<I', num_voxels)
+        # XYZI chunk (voxel data) (child size: 0)
+        xyzi_chunk = b'XYZI' + struct.pack('<I', chunk_size) + struct.pack('<I', 0) + struct.pack('<I', num_voxels)
         for x, y, z, color in voxels:
             xyzi_chunk += bytes([x, y, z, color])
         main_data += xyzi_chunk
         
-        # RGBA chunk (palette)
-        rgba_chunk = b'RGBA' + struct.pack('<I', 1024)
+        # RGBA chunk (palette) (child size: 0)
+        rgba_chunk = b'RGBA' + struct.pack('<I', 1024) + struct.pack('<I', 0)
         for r, g, b, a in model.palette:
             rgba_chunk += bytes([b, g, r, a])  # BGRA order for MagicaVoxel
         main_data += rgba_chunk
         
-        # Wrap in MAIN chunk
-        main_chunk = b'MAIN' + struct.pack('<I', len(main_data)) + main_data
+        # Wrap in MAIN chunk (content size: 0, child size: len(main_data))
+        main_chunk = b'MAIN' + struct.pack('<I', 0) + struct.pack('<I', len(main_data)) + main_data
         
         # File header
         header = b'VOX ' + struct.pack('<I', VOX_VERSION)
