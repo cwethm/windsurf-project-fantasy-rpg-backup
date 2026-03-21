@@ -885,7 +885,7 @@ class VoxelGame {
     this.inventory = new Inventory(this);
     this.ui = new UI();
     this.crafting = new Crafting(this);
-    this.playerVOXModel = null; // Cache for player VOX model
+    this.playerVOXData = null; // Cache for player VOX geometry and material
     
     this.chunks = new Map();
     this.blockMeshes = new Map();
@@ -926,8 +926,12 @@ class VoxelGame {
   }
 
   async loadPlayerVOXModel() {
-    if (this.playerVOXModel) {
-      return this.playerVOXModel;
+    if (this.playerVOXData) {
+      const mesh = new THREE.Mesh(this.playerVOXData.geometry, this.playerVOXData.material.clone());
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.scale.set(0.5, 0.5, 0.5);
+      return mesh;
     }
     
     try {
@@ -939,14 +943,14 @@ class VoxelGame {
         alphaTest: 0.9
       });
       
-      this.playerVOXModel = new THREE.Mesh(geometry, material);
-      this.playerVOXModel.castShadow = true;
-      this.playerVOXModel.receiveShadow = true;
+      this.playerVOXData = { geometry, material };
       
-      // Scale the model appropriately
-      this.playerVOXModel.scale.set(0.5, 0.5, 0.5);
+      const mesh = new THREE.Mesh(geometry, material.clone());
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.scale.set(0.5, 0.5, 0.5);
       
-      return this.playerVOXModel;
+      return mesh;
     } catch (error) {
       console.error('Failed to load player VOX model:', error);
       return null;

@@ -3105,6 +3105,34 @@ class MobManager:
         else:
             mob.state = 'idle'
             mob.target_player_id = None
+        
+        # Mob-to-mob collision detection and separation
+        collision_radius = 1.5  # Minimum distance between mobs
+        separation_force = 0.0
+        separation_x = 0.0
+        separation_z = 0.0
+        
+        for other_mob in self.mobs.values():
+            if other_mob.id == mob.id:
+                continue
+            
+            dx = mob.position[0] - other_mob.position[0]
+            dz = mob.position[2] - other_mob.position[2]
+            dist = math.sqrt(dx*dx + dz*dz)
+            
+            if dist < collision_radius and dist > 0:
+                # Apply separation force proportional to overlap
+                overlap = collision_radius - dist
+                force = overlap / collision_radius
+                separation_x += (dx / dist) * force
+                separation_z += (dz / dist) * force
+                separation_force += force
+        
+        # Apply separation if there are nearby mobs
+        if separation_force > 0:
+            mob.position[0] += separation_x * 2.0 * self.tick_dt
+            mob.position[2] += separation_z * 2.0 * self.tick_dt
+            moved = True
 
         if moved and current_time - mob.last_broadcast_time >= mob.broadcast_interval:
             mob.last_broadcast_time = current_time
