@@ -605,20 +605,20 @@ BLOCK_DROPS = {
 
 # Mob stats table
 MOB_STATS = {
-    'zombie':   {'health': 50,  'damage': 8,  'speed': 2.0, 'attack_range': 2.0, 'detection_range': 14.0, 'xp_reward': 20,
+    'zombie':   {'health': 15,  'damage': 8,  'speed': 2.0, 'attack_range': 2.0, 'detection_range': 14.0, 'xp_reward': 20,
                  'loot': [{'type': ITEM_TYPES['DIRT'], 'weight': 60, 'count': (1,2)},
                            {'type': ITEM_TYPES['WOOD'], 'weight': 30, 'count': (1,2)}]},
-    'skeleton': {'health': 35,  'damage': 12, 'speed': 2.5, 'attack_range': 1.5, 'detection_range': 16.0, 'xp_reward': 25,
+    'skeleton': {'health': 12,  'damage': 12, 'speed': 2.5, 'attack_range': 1.5, 'detection_range': 16.0, 'xp_reward': 25,
                  'loot': [{'type': ITEM_TYPES['STONE'], 'weight': 70, 'count': (1,3)},
                            {'type': ITEM_TYPES['STICK'], 'weight': 40, 'count': (1,2)}]},
-    'goblin':   {'health': 25,  'damage': 6,  'speed': 3.5, 'attack_range': 1.5, 'detection_range': 10.0, 'xp_reward': 15,
+    'goblin':   {'health': 10,  'damage': 6,  'speed': 3.5, 'attack_range': 1.5, 'detection_range': 10.0, 'xp_reward': 15,
                  'loot': [{'type': ITEM_TYPES['STONE'], 'weight': 50, 'count': (1,2)},
                            {'type': ITEM_TYPES['COAL'],  'weight': 30, 'count': (1,3)}]},
-    'slime':    {'health': 60,  'damage': 5,  'speed': 1.5, 'attack_range': 1.5, 'detection_range': 8.0,  'xp_reward': 10,
+    'slime':    {'health': 20,  'damage': 5,  'speed': 1.5, 'attack_range': 1.5, 'detection_range': 8.0,  'xp_reward': 10,
                  'loot': []},
-    'spider':   {'health': 40,  'damage': 10, 'speed': 4.0, 'attack_range': 1.8, 'detection_range': 14.0, 'xp_reward': 22,
+    'spider':   {'health': 15,  'damage': 10, 'speed': 4.0, 'attack_range': 1.8, 'detection_range': 14.0, 'xp_reward': 22,
                  'loot': [{'type': ITEM_TYPES['STICK'], 'weight': 60, 'count': (1,2)}]},
-    'troll':    {'health': 150, 'damage': 20, 'speed': 1.0, 'attack_range': 3.0, 'detection_range': 10.0, 'xp_reward': 60,
+    'troll':    {'health': 50,  'damage': 20, 'speed': 1.0, 'attack_range': 3.0, 'detection_range': 10.0, 'xp_reward': 60,
                  'loot': [{'type': ITEM_TYPES['STONE'],      'weight': 90, 'count': (3,8)},
                            {'type': ITEM_TYPES['IRON_INGOT'], 'weight': 40, 'count': (1,3)},
                            {'type': ITEM_TYPES['GOLD_INGOT'], 'weight': 15, 'count': (1,2)}]},
@@ -627,7 +627,7 @@ MOB_STATS = {
                  'loot': [{'type': ITEM_TYPES['MEAT'],       'weight': 80, 'count': (1,3)},
                            {'type': ITEM_TYPES['HIDE'],        'weight': 60, 'count': (1,2)},
                            {'type': ITEM_TYPES['BONE'],        'weight': 40, 'count': (1,2)}]},
-    'boar':     {'health': 40,  'damage': 8,  'speed': 4.0, 'attack_range': 1.5, 'detection_range': 8.0, 'xp_reward': 20,
+    'boar':     {'health': 15,  'damage': 8,  'speed': 4.0, 'attack_range': 1.5, 'detection_range': 8.0, 'xp_reward': 20,
                  'loot': [{'type': ITEM_TYPES['MEAT'],       'weight': 90, 'count': (2,4)},
                            {'type': ITEM_TYPES['HIDE'],        'weight': 50, 'count': (1,2)},
                            {'type': ITEM_TYPES['TEETH'],       'weight': 30, 'count': (1,3)}]},
@@ -642,11 +642,11 @@ MOB_STATS = {
                  'loot': [{'type': ITEM_TYPES['MEAT'],        'weight': 70, 'count': (1,1)},
                            {'type': ITEM_TYPES['FUR'],         'weight': 60, 'count': (1,2)},
                            {'type': ITEM_TYPES['BONE'],        'weight': 20, 'count': (1,2)}]},
-    'wolf':     {'health': 50,  'damage': 12, 'speed': 4.5, 'attack_range': 2.0, 'detection_range': 16.0, 'xp_reward': 30,
+    'wolf':     {'health': 18,  'damage': 12, 'speed': 4.5, 'attack_range': 2.0, 'detection_range': 16.0, 'xp_reward': 30,
                  'loot': [{'type': ITEM_TYPES['MEAT'],        'weight': 70, 'count': (2,3)},
                            {'type': ITEM_TYPES['FUR'],         'weight': 80, 'count': (1,2)},
                            {'type': ITEM_TYPES['TEETH'],       'weight': 50, 'count': (1,2)}]},
-    'bear':     {'health': 120, 'damage': 18, 'speed': 3.0, 'attack_range': 2.5, 'detection_range': 12.0, 'xp_reward': 50,
+    'bear':     {'health': 40,  'damage': 18, 'speed': 3.0, 'attack_range': 2.5, 'detection_range': 12.0, 'xp_reward': 50,
                  'loot': [{'type': ITEM_TYPES['MEAT'],        'weight': 90, 'count': (4,8)},
                            {'type': ITEM_TYPES['FUR'],         'weight': 70, 'count': (2,3)},
                            {'type': ITEM_TYPES['CLAWS'],       'weight': 60, 'count': (2,4)},
@@ -692,9 +692,17 @@ class Player:
         self.last_block_break_time = 0
         self.last_block_place_time = 0
         self.speed_violations = 0
+        
+        # Death and animation state
+        self.is_dead = False
+        self.death_time = 0.0
+        self.attack_animation_time = 0.0
     
     def take_damage(self, damage: float, attacker_id: str = None) -> bool:
         """Apply damage to player, returns True if player died"""
+        if self.is_dead:
+            return False
+            
         current_time = time.time()
         if current_time - self.last_damage_time < self.damage_cooldown:
             return False
@@ -709,11 +717,18 @@ class Player:
         armor_reduction = min(0.8, total_protection * 0.04)  # Max 80% reduction
         actual_damage = damage * (1 - armor_reduction)
         
+        # Damage armor durability
+        self.damage_armor(damage)
+        
         old_health = self.health
         self.health = max(0, self.health - actual_damage)
         self.last_damage_time = current_time
         
-        return self.health <= 0
+        if self.health <= 0:
+            self.is_dead = True
+            self.death_time = current_time
+            return True
+        return False
     
     def heal(self, amount: float):
         """Heal the player"""
@@ -722,8 +737,110 @@ class Player:
     def get_attack_damage(self) -> float:
         """Get the player's attack damage based on equipped weapon"""
         if self.equipped_weapon:
-            return self.equipped_weapon.get('damage', 1)
-        return 1  # Fist damage
+            return self.equipped_weapon.get('damage', 5)
+        return 5  # Base fist damage
+    
+    def reduce_weapon_durability(self, amount: int = 1) -> bool:
+        """Reduce weapon durability, returns True if weapon broke"""
+        if not self.equipped_weapon:
+            return False
+        
+        self.equipped_weapon['durability'] = max(0, self.equipped_weapon['durability'] - amount)
+        
+        if self.equipped_weapon['durability'] <= 0:
+            # Weapon broke
+            self.equipped_weapon = None
+            return True
+        return False
+    
+    def reduce_armor_durability(self, slot: str, amount: int = 1) -> bool:
+        """Reduce armor durability, returns True if armor broke"""
+        if slot not in self.equipped_armor or not self.equipped_armor[slot]:
+            return False
+        
+        self.equipped_armor[slot]['durability'] = max(0, self.equipped_armor[slot]['durability'] - amount)
+        
+        if self.equipped_armor[slot]['durability'] <= 0:
+            # Armor broke
+            self.equipped_armor[slot] = None
+            return True
+        return False
+    
+    def damage_armor(self, damage: float):
+        """Damage all equipped armor pieces"""
+        # Each point of damage reduces armor durability
+        durability_loss = max(1, int(damage / 4))
+        
+        for slot in ['helmet', 'chestplate', 'leggings', 'boots']:
+            if self.equipped_armor.get(slot):
+                self.reduce_armor_durability(slot, durability_loss)
+    
+    def use_weapon(self):
+        """Use weapon (reduces durability)"""
+        return self.reduce_weapon_durability(1)
+    
+    def use_tool(self, tool_type: int = None) -> bool:
+        """Use tool for mining (reduces durability)"""
+        # For now, reduce weapon durability if used as tool
+        # In future, track tools separately
+        if self.equipped_weapon:
+            return self.reduce_weapon_durability(1)
+        return False
+    
+    def get_mining_speed(self, block_type: int, tool_type: int = None) -> float:
+        """Get mining speed multiplier based on tool"""
+        # Tool efficiency multipliers
+        tool_multipliers = {
+            # Pickaxes for stone/ore
+            ITEM_TYPES['WOODEN_PICKAXE']: 2.0,
+            ITEM_TYPES['STONE_PICKAXE']: 4.0,
+            ITEM_TYPES['IRON_PICKAXE']: 6.0,
+            ITEM_TYPES['GOLD_PICKAXE']: 12.0,
+            ITEM_TYPES['DIAMOND_PICKAXE']: 8.0,
+            # Axes for wood
+            ITEM_TYPES['WOODEN_AXE']: 2.0,
+            ITEM_TYPES['STONE_AXE']: 4.0,
+            ITEM_TYPES['IRON_AXE']: 6.0,
+            ITEM_TYPES['GOLD_AXE']: 12.0,
+            ITEM_TYPES['DIAMOND_AXE']: 8.0,
+        }
+        
+        # Check if using appropriate tool
+        if tool_type and tool_type in tool_multipliers:
+            # Check if tool is appropriate for block
+            is_stone = block_type in [BLOCK_TYPES['STONE'], BLOCK_TYPES['COBBLESTONE'], 
+                                      BLOCK_TYPES['COAL_ORE'], BLOCK_TYPES['IRON_ORE'],
+                                      BLOCK_TYPES['GOLD_ORE'], BLOCK_TYPES['DIAMOND_ORE']]
+            is_wood = block_type in [BLOCK_TYPES['WOOD'], BLOCK_TYPES['LOG'], BLOCK_TYPES['PLANKS']]
+            
+            is_pickaxe = 110 <= tool_type < 120
+            is_axe = 120 <= tool_type < 130
+            
+            if (is_pickaxe and is_stone) or (is_axe and is_wood):
+                return tool_multipliers[tool_type]
+        
+        return 1.0  # No bonus
+    
+    def get_mining_time(self, block_type: int, tool_type: int = None) -> float:
+        """Calculate time to mine a block"""
+        # Base mining times by block hardness
+        block_hardness = {
+            BLOCK_TYPES['DIRT']: 0.5,
+            BLOCK_TYPES['GRASS']: 0.5,
+            BLOCK_TYPES['SAND']: 0.5,
+            BLOCK_TYPES['WOOD']: 1.5,
+            BLOCK_TYPES['STONE']: 2.0,
+            BLOCK_TYPES['COBBLESTONE']: 2.0,
+            BLOCK_TYPES['COAL_ORE']: 3.0,
+            BLOCK_TYPES['IRON_ORE']: 3.0,
+            BLOCK_TYPES['GOLD_ORE']: 3.0,
+            BLOCK_TYPES['DIAMOND_ORE']: 4.0,
+        }
+        
+        base_time = block_hardness.get(block_type, 1.0)
+        speed_multiplier = self.get_mining_speed(block_type, tool_type)
+        
+        return base_time / speed_multiplier
     
     def equip_item(self, item: Dict[str, Any], slot: str):
         """Equip an item in the appropriate slot"""
@@ -1321,6 +1438,10 @@ class VoxelServer:
             await self.handle_npc_interact(client_id, data)
         elif message_type == MESSAGE_TYPES['COMBAT_HIT']:
             await self.handle_combat_hit(client_id, data)
+        elif message_type == MESSAGE_TYPES['MOB_INTERACT']:
+            await self.handle_mob_interact(client_id, data)
+        elif message_type == 'respawn':
+            await self.handle_respawn(client_id)
         elif message_type == MESSAGE_TYPES['EQUIP_ITEM']:
             await self.handle_equip_item(client_id, data)
         elif message_type == MESSAGE_TYPES['UNEQUIP_ITEM']:
@@ -2167,13 +2288,61 @@ class VoxelServer:
         
         logger.info(f"Player {player.username} crafted {result_count}x item {result_type}")
     
+    async def handle_mob_interact(self, player_id: str, data: Dict[str, Any]):
+        """Handle player right-clicking on a mob (for passive mob following)"""
+        player = self.players.get(player_id)
+        if not player:
+            return
+        
+        mob_id = data.get('mobId')
+        mob = self.mob_manager.mobs.get(mob_id)
+        if not mob or mob.is_dead:
+            return
+        
+        # Check distance (max 6 blocks for interaction)
+        dx = player.position[0] - mob.position[0]
+        dy = player.position[1] - mob.position[1]
+        dz = player.position[2] - mob.position[2]
+        distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+        
+        if distance > MAX_REACH_DISTANCE:
+            return  # Too far away
+        
+        # Only passive mobs can be interacted with to follow
+        if not mob.is_passive():
+            return
+        
+        # Toggle follow state
+        if mob.follow_target_id == player_id:
+            # Already following this player, stop following
+            mob.unfollow()
+            await self.send_to_client(player_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                'message': f'{mob.type.capitalize()} stopped following you'
+            })
+        else:
+            # Start following this player
+            mob.follow(player_id)
+            await self.send_to_client(player_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                'message': f'{mob.type.capitalize()} is now following you'
+            })
+        
+        # Broadcast mob state update
+        await self.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
+            'mobId': mob.id,
+            'position': mob.position,
+            'state': mob.state,
+            'followTargetId': mob.follow_target_id,
+        })
+        
+        logger.info(f"Player {player.username} interacted with {mob.type} {mob.id}, follow state: {mob.state}")
+    
     async def handle_combat_hit(self, attacker_id: str, data: Dict[str, Any]):
         """Handle combat hit — player attacking another player or a mob."""
         attacker = self.players.get(attacker_id)
         if not attacker:
             return
         
-        target_id = data.get('target_id')
+        target_id = data.get('targetId') or data.get('target_id')
         
         # Check if target is a mob
         mob = self.mob_manager.mobs.get(target_id)
@@ -2268,9 +2437,12 @@ class VoxelServer:
         await self.send_to_client(victim_id, MESSAGE_TYPES['INVENTORY_UPDATE'],
             victim.inventory.to_dict())
         
-        # Respawn player at spawn point
-        victim.position = [0.0, 80.0, 0.0]
-        victim.velocity = [0.0, 0.0, 0.0]
+        # Broadcast death state to all clients
+        await self.broadcast(MESSAGE_TYPES['PLAYER_MOVE'], {
+            'playerId': victim.id,
+            'position': {'x': victim.position[0], 'y': victim.position[1], 'z': victim.position[2]},
+            'isDead': True
+        })
         
         # Send death message
         death_msg = f"{victim.username} died"
@@ -2281,12 +2453,45 @@ class VoxelServer:
             'message': death_msg
         })
         
-        # Send respawn notification
+        # Send death notification to player - they must press Enter to respawn
         await self.send_to_client(victim_id, MESSAGE_TYPES['PLAYER_DEATH'], {
-            'respawn_position': victim.position
+            'message': 'You died. Press Enter to respawn.'
         })
         
-        logger.info(f"Player {victim.username} died")
+        logger.info(f"Player {victim.username} died, waiting for respawn request")
+    
+    async def handle_respawn(self, client_id: str):
+        """Handle player respawn request"""
+        player = self.players.get(client_id)
+        if not player:
+            return
+        
+        if not player.is_dead:
+            logger.warning(f"Player {player.username} requested respawn but is not dead")
+            return
+        
+        # Respawn player at spawn point
+        player.position = [0.0, 80.0, 0.0]
+        player.velocity = [0.0, 0.0, 0.0]
+        player.health = player.max_health
+        player.is_dead = False
+        
+        # Notify player of respawn
+        await self.send_to_client(client_id, MESSAGE_TYPES['PLAYER_UPDATE'], {
+            'health': player.health,
+            'max_health': player.max_health,
+            'position': player.position
+        })
+        
+        # Broadcast revival to all clients
+        await self.broadcast(MESSAGE_TYPES['PLAYER_MOVE'], {
+            'playerId': player.id,
+            'position': {'x': player.position[0], 'y': player.position[1], 'z': player.position[2]},
+            'isDead': False,
+            'isRevived': True
+        })
+        
+        logger.info(f"Player {player.username} respawned at spawn point")
     
     async def handle_equip_item(self, client_id: str, data: Dict[str, Any]):
         """Handle equipping items"""
@@ -2955,14 +3160,43 @@ class Mob:
         self.position = [float(x), float(y), float(z)]
         self.state = 'idle'
         self.target_player_id: Optional[str] = None
+        self.follow_target_id: Optional[str] = None  # Player being followed (passive mobs)
         self.last_attack_time = 0.0
         self.attack_cooldown = 1.5
         self.last_broadcast_time = 0.0
         self.broadcast_interval = 0.3
+        self.is_dead = False
+        self.death_time = 0.0
+        self.corpse_duration = 60.0  # Corpse persists for 60 seconds
+        self.attack_animation_time = 0.0
+        self.can_be_harvested = True  # For future harvest mechanics
+        self.follow_distance = 3.0  # Distance to maintain when following
 
+    def follow(self, player_id: str):
+        """Set mob to follow a specific player (for passive mobs)"""
+        self.follow_target_id = player_id
+        self.state = 'following'
+        
+    def unfollow(self):
+        """Stop following player"""
+        self.follow_target_id = None
+        if self.state == 'following':
+            self.state = 'idle'
+    
+    def is_passive(self) -> bool:
+        """Check if this mob is passive (0 damage)"""
+        return self.damage == 0
+    
     def take_damage(self, damage: float) -> bool:
+        if self.is_dead:
+            return False
         self.health = max(0.0, self.health - damage)
-        return self.health <= 0
+        if self.health <= 0:
+            self.is_dead = True
+            self.state = 'dead'
+            self.death_time = time.time()
+            return True
+        return False
 
     def roll_loot(self) -> List[Dict]:
         drops = []
@@ -2980,6 +3214,7 @@ class Mob:
             'health': self.health,
             'max_health': self.max_health,
             'state': self.state,
+            'followTargetId': self.follow_target_id,
         }
 
 
@@ -3015,11 +3250,13 @@ class MobManager:
             sx = player.position[0] + math.cos(angle) * dist
             sz = player.position[2] + math.sin(angle) * dist
             sy = None
-            for y in range(60, 20, -1):
+            # Search from higher up to find surface
+            for y in range(80, 20, -1):
                 if world.get_block(int(sx), y, int(sz)) != 0:
-                    sy = float(y + 1)
+                    # Spawn 1.5 blocks above solid ground (mob feet at y+1)
+                    sy = float(y + 1.5)
                     break
-            if sy is not None and 22 < sy < 56:
+            if sy is not None and 22 < sy < 82:
                 mob_type = (random.choice(self.RARE_TYPES)
                             if random.random() < 0.05
                             else random.choice(self.COMMON_TYPES))
@@ -3038,18 +3275,28 @@ class MobManager:
                 self.mobs[mob.id] = mob
                 await server.broadcast(MESSAGE_TYPES['MOB_SPAWN'], mob.to_dict())
 
-        # AI tick
+        # AI tick (only for living mobs)
         for mob_id in list(self.mobs.keys()):
             mob = self.mobs.get(mob_id)
-            if mob is None or mob.health <= 0:
+            if mob is None:
                 continue
+            
+            # Skip AI for dead mobs
+            if mob.is_dead:
+                # Check if corpse has expired
+                if current_time - mob.death_time >= mob.corpse_duration:
+                    self.mobs.pop(mob_id, None)
+                    await server.broadcast(MESSAGE_TYPES['MOB_DESPAWN'], {'mobId': mob_id})
+                    logger.info(f"Corpse {mob_id} ({mob.type}) despawned after {mob.corpse_duration}s")
+                continue
+            
             await self._tick_mob(mob, players, server, current_time)
 
-        # Despawn distant mobs
+        # Despawn distant living mobs
         if players:
             for mob_id in [
                 m.id for m in self.mobs.values()
-                if m.health > 0 and min(
+                if not m.is_dead and min(
                     math.sqrt((m.position[0]-p.position[0])**2 + (m.position[2]-p.position[2])**2)
                     for p in players.values()
                 ) > self.despawn_dist
@@ -3058,10 +3305,66 @@ class MobManager:
                 await server.broadcast(MESSAGE_TYPES['MOB_DESPAWN'], {'mobId': mob_id})
 
     async def _tick_mob(self, mob: Mob, players: Dict, server, current_time: float):
-        # Find nearest player
+        # Handle passive mob following behavior
+        if mob.is_passive() and mob.follow_target_id:
+            follow_target = players.get(mob.follow_target_id)
+            if follow_target and not follow_target.is_dead:
+                # Calculate distance to follow target
+                dx = follow_target.position[0] - mob.position[0]
+                dy = follow_target.position[1] - mob.position[1]
+                dz = follow_target.position[2] - mob.position[2]
+                dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+                
+                # Follow if beyond follow distance
+                if dist > mob.follow_distance:
+                    mob.state = 'following'
+                    # Move toward player
+                    dxz = math.sqrt(dx*dx + dz*dz)
+                    if dxz > 0:
+                        mob.position[0] += (dx / dxz) * mob.speed * self.tick_dt
+                        mob.position[2] += (dz / dxz) * mob.speed * self.tick_dt
+                        
+                        # Broadcast movement
+                        if current_time - mob.last_broadcast_time >= mob.broadcast_interval:
+                            mob.last_broadcast_time = current_time
+                            await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
+                                'mobId': mob.id,
+                                'position': mob.position,
+                                'state': mob.state,
+                                'followTargetId': mob.follow_target_id,
+                            })
+                else:
+                    # Close enough, just idle near player
+                    mob.state = 'following'
+            else:
+                # Follow target died or disconnected, stop following
+                mob.unfollow()
+            
+            # Apply mob-to-mob collision for following mobs too
+            await self._apply_mob_collision(mob, current_time, server)
+            return
+        
+        # Check if current target is dead - if so, clear target and return to idle
+        if mob.target_player_id:
+            target = players.get(mob.target_player_id)
+            if target and target.is_dead:
+                mob.state = 'idle'
+                mob.target_player_id = None
+        
+        # Passive mobs don't attack, only follow when triggered
+        if mob.is_passive():
+            mob.state = 'idle'
+            mob.target_player_id = None
+            return
+        
+        # Find nearest living player (ignore dead players) - for hostile mobs only
         nearest_player = None
         nearest_dist = float('inf')
         for player in players.values():
+            # Skip dead players - mobs lose interest
+            if player.is_dead:
+                continue
+                
             dx = player.position[0] - mob.position[0]
             dy = player.position[1] - mob.position[1]
             dz = player.position[2] - mob.position[2]
@@ -3077,6 +3380,7 @@ class MobManager:
                 mob.state = 'attacking'
                 if current_time - mob.last_attack_time >= mob.attack_cooldown:
                     mob.last_attack_time = current_time
+                    mob.attack_animation_time = current_time
                     died = nearest_player.take_damage(mob.damage, mob.id)
                     client_id = server._find_client_by_player_id(nearest_player.id)
                     if client_id:
@@ -3090,6 +3394,7 @@ class MobManager:
                         'mobId': mob.id,
                         'targetId': nearest_player.id,
                         'damage': mob.damage,
+                        'attackAnimationTime': current_time,
                     })
                     if died:
                         await server.handle_player_death(nearest_player.id)
@@ -3106,7 +3411,20 @@ class MobManager:
             mob.state = 'idle'
             mob.target_player_id = None
         
-        # Mob-to-mob collision detection and separation
+        # Apply mob-to-mob collision
+        collision_moved = await self._apply_mob_collision(mob, current_time, server)
+        moved = moved or collision_moved
+
+        if moved and current_time - mob.last_broadcast_time >= mob.broadcast_interval:
+            mob.last_broadcast_time = current_time
+            await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
+                'mobId': mob.id,
+                'position': mob.position,
+                'state': mob.state,
+            })
+    
+    async def _apply_mob_collision(self, mob: Mob, current_time: float, server) -> bool:
+        """Apply mob-to-mob collision avoidance. Returns True if mob moved."""
         collision_radius = 1.5  # Minimum distance between mobs
         separation_force = 0.0
         separation_x = 0.0
@@ -3132,15 +3450,9 @@ class MobManager:
         if separation_force > 0:
             mob.position[0] += separation_x * 2.0 * self.tick_dt
             mob.position[2] += separation_z * 2.0 * self.tick_dt
-            moved = True
-
-        if moved and current_time - mob.last_broadcast_time >= mob.broadcast_interval:
-            mob.last_broadcast_time = current_time
-            await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
-                'mobId': mob.id,
-                'position': mob.position,
-                'state': mob.state,
-            })
+            return True
+        
+        return False
 
     async def handle_mob_damaged(self, mob_id: str, damage: float,
                                   attacker_id: str, server) -> bool:
@@ -3194,9 +3506,17 @@ class MobManager:
                         'max_health': player.max_health,
                         'max_mana': player.max_mana,
                     })
-        await server.broadcast(MESSAGE_TYPES['MOB_DESPAWN'], {'mobId': mob.id})
-        self.mobs.pop(mob.id, None)
-        logger.info(f"Mob {mob.id} ({mob.type}) died, dropped {len(drops)} items")
+        
+        # Broadcast death state instead of immediate despawn
+        await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
+            'mobId': mob.id,
+            'position': mob.position,
+            'health': 0,
+            'max_health': mob.max_health,
+            'state': 'dead',
+            'isDead': True,
+        })
+        logger.info(f"Mob {mob.id} ({mob.type}) died, dropped {len(drops)} items, corpse will persist")
 
 
 class NPC:

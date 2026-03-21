@@ -300,6 +300,7 @@ MESSAGE_TYPES = {
     'MOB_DESPAWN': 'mob_despawn',
     'MOB_MOVE': 'mob_move',
     'MOB_ATTACK': 'mob_attack',
+    'MOB_INTERACT': 'mob_interact',
     'NPC_SPAWN': 'npc_spawn',
     'NPC_DESPAWN': 'npc_despawn',
     'NPC_INTERACT': 'npc_interact',

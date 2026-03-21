@@ -4,6 +4,14 @@ A server-authoritative multiplayer voxel-based 3D MMO game built with Three.js (
 
 ## Features
 
+### 🆕 Passive Mob Following (NEW!)
+- Right-click passive mobs (deer, sheep, cow, rabbit, chicken) to make them follow you
+- Toggle following on/off with repeated clicks
+- Mobs maintain 3-block distance while following
+- See [PASSIVE_MOB_FOLLOWING.md](PASSIVE_MOB_FOLLOWING.md) for details
+
+### Core Features
+
 ### Core Architecture
 - **Server-authoritative multiplayer** with client-server architecture
 - **Real-time WebSocket communication** for player synchronization

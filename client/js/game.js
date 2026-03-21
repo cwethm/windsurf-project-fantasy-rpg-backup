@@ -784,6 +784,7 @@ const MESSAGE_TYPES = {
   REGISTER: 'register',
   LOGIN: 'login',
   LOGOUT: 'logout',
+  MOB_INTERACT: 'mob_interact',
   JOIN: 'join',
   MOVE: 'move',
   JUMP: 'jump',
@@ -911,6 +912,10 @@ class VoxelGame {
     // Item lock state
     this.itemLockEnabled = true;
     
+    // Death and respawn state
+    this.isDead = false;
+    this.respawnModal = null;
+    
     this.init();
   }
 
@@ -919,10 +924,46 @@ class VoxelGame {
       console.log('Initializing game...');
       await this.loadPlayerVOXModel();
       this.setupAuth();
+      this.setupRespawnModal();
       console.log('Auth setup complete');
     } catch (error) {
       console.error('Error during init:', error);
     }
+  }
+  
+  setupRespawnModal() {
+    this.respawnModal = document.getElementById('respawnModal');
+    
+    // Listen for Enter key to respawn
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && this.isDead) {
+        this.requestRespawn();
+      }
+    });
+  }
+  
+  showRespawnModal() {
+    this.isDead = true;
+    if (this.respawnModal) {
+      this.respawnModal.classList.add('show');
+    }
+    console.log('Death modal shown - Press ENTER to respawn');
+  }
+  
+  hideRespawnModal() {
+    this.isDead = false;
+    if (this.respawnModal) {
+      this.respawnModal.classList.remove('show');
+    }
+  }
+  
+  requestRespawn() {
+    console.log('Requesting respawn...');
+    this.socket.send(JSON.stringify({
+      type: 'respawn',
+      data: {}
+    }));
+    this.hideRespawnModal();
   }
 
   async loadPlayerVOXModel() {
@@ -1325,53 +1366,73 @@ class VoxelGame {
   }
 
   handleMouseDown(event) {
+    console.log('=== MOUSE DOWN - LEFT CLICK ATTACK ===');
+    console.log('Pointer locked:', this.controls.pointerLocked);
+    console.log('Total enemies:', this.enemies.size);
+    
     // Check for enemy hits first
-    const enemyTarget = this.raycaster.getTargetEnemy(this.camera, this.scene);
-    if (enemyTarget && this.player.canAttack()) {
-      this.player.attack();
+    const enemyTarget = this.raycaster.getTargetEnemy(this.camera, this);
+    console.log('Enemy target result:', enemyTarget);
+    
+    if (enemyTarget) {
+      console.log(`Found enemy: ${enemyTarget.enemy.type} (${enemyTarget.enemy.id}) at distance ${enemyTarget.distance.toFixed(2)}`);
+      console.log('Can attack:', this.player.canAttack());
       
-      // Calculate damage based on weapon
-      const weapon = this.inventory.slots[this.inventory.selectedSlot];
-      let damage = 5; // Base damage
-      
-      if (weapon && weapon.stats && weapon.stats.damage) {
-        damage = weapon.stats.damage;
-      }
-      
-      // Add critical hit chance
-      const isCritical = Math.random() < 0.1; // 10% chance
-      if (isCritical) {
-        damage *= 2;
-        console.log('CRITICAL HIT!');
-      }
-      
-      // Apply status effects based on weapon type or enchantments
-      if (weapon && weapon.enchantments) {
-        weapon.enchantments.forEach(enchantment => {
-          if (Math.random() < enchantment.chance) {
-            this.statusEffects.applyEffect(
-              enemyTarget.enemy.id,
-              enchantment.effect,
-              enchantment.duration
-            );
-            console.log(`Applied ${enchantment.effect} to enemy!`);
-          }
-        });
-      }
-      
-      enemyTarget.enemy.takeDamage(damage);
-      
-      // Send damage to server
-      this.socket.send(JSON.stringify({
-        type: MESSAGE_TYPES.COMBAT_HIT,
-        data: {
+      if (this.player.canAttack()) {
+        this.player.attack();
+        
+        // Calculate damage based on weapon
+        const weapon = this.inventory.slots[this.inventory.selectedSlot];
+        let damage = 5; // Base damage
+        
+        if (weapon && weapon.stats && weapon.stats.damage) {
+          damage = weapon.stats.damage;
+        }
+        
+        // Add critical hit chance
+        const isCritical = Math.random() < 0.1; // 10% chance
+        if (isCritical) {
+          damage *= 2;
+          console.log('CRITICAL HIT!');
+        }
+        
+        console.log(`Dealing ${damage} damage to ${enemyTarget.enemy.type}`);
+        
+        // Apply status effects based on weapon type or enchantments
+        if (weapon && weapon.enchantments) {
+          weapon.enchantments.forEach(enchantment => {
+            if (Math.random() < enchantment.chance) {
+              this.statusEffects.applyEffect(
+                enemyTarget.enemy.id,
+                enchantment.effect,
+                enchantment.duration
+              );
+              console.log(`Applied ${enchantment.effect} to enemy!`);
+            }
+          });
+        }
+        
+        enemyTarget.enemy.takeDamage(damage);
+        
+        // Send damage to server
+        console.log('Sending COMBAT_HIT to server:', {
           targetId: enemyTarget.enemy.id,
           damage: Math.floor(damage),
           isCritical: isCritical
-        }
-      }));
+        });
+        this.socket.send(JSON.stringify({
+          type: MESSAGE_TYPES.COMBAT_HIT,
+          data: {
+            targetId: enemyTarget.enemy.id,
+            damage: Math.floor(damage),
+            isCritical: isCritical
+          }
+        }));
+      }
       
       return;
+    } else {
+      console.log('No enemy target found');
     }
     
     const target = this.raycaster.getTargetBlock(this.camera, this.scene);
@@ -1452,6 +1513,17 @@ class VoxelGame {
   }
 
   handleRightClickDown(event) {
+    // Check for mob interaction first (passive mobs can be clicked to follow)
+    const enemyTarget = this.raycaster.getTargetEnemy(this.camera, this);
+    if (enemyTarget && enemyTarget.enemy) {
+      // Send mob interaction to server
+      this.socket.send(JSON.stringify({
+        type: MESSAGE_TYPES.MOB_INTERACT,
+        data: { mobId: enemyTarget.enemy.id }
+      }));
+      return;
+    }
+    
     const target = this.raycaster.getTargetBlock(this.camera, this.scene);
     if (!target) return;
 
@@ -1538,6 +1610,9 @@ class VoxelGame {
         break;
       case MESSAGE_TYPES.PLAYER_DAMAGE:
         this.handlePlayerDamage(message.data);
+        break;
+      case MESSAGE_TYPES.PLAYER_DEATH:
+        this.showRespawnModal();
         break;
       case MESSAGE_TYPES.CHAT_MESSAGE:
         this.addChatMessage(message.data.message, 'normal', {
@@ -1688,6 +1763,26 @@ class VoxelGame {
         player.position.set(data.position.x, data.position.y, data.position.z);
       }
       player.mesh.position.copy(player.position);
+      
+      // Handle death state
+      if (data.isDead && !player.isDead) {
+        player.isDead = true;
+        // Rotate mesh to horizontal (dead)
+        if (player.mesh) {
+          player.mesh.rotation.z = Math.PI / 2; // 90 degrees to lay horizontal
+          player.mesh.position.y = player.position.y - 0.5; // Lower to ground
+        }
+      }
+      
+      // Handle revival
+      if (data.isRevived || (!data.isDead && player.isDead)) {
+        player.isDead = false;
+        // Restore vertical orientation
+        if (player.mesh) {
+          player.mesh.rotation.z = 0; // Back to vertical
+          player.mesh.position.copy(player.position);
+        }
+      }
     } else {
       console.log(`Player ${data.playerId} not found in otherPlayers`);
     }
@@ -2061,7 +2156,12 @@ class VoxelGame {
   updateEnemies(deltaTime) {
     // Update enemy positions and behaviors
     for (const [id, enemy] of this.enemies) {
-      if (enemy.health <= 0 || !enemy.mesh) continue;
+      if (!enemy.mesh) continue;
+      
+      // Skip animations for dead mobs (they stay horizontal)
+      if (enemy.isDead) continue;
+      
+      if (enemy.health <= 0) continue;
       
       // Simple AI: move towards player if close enough
       const distance = enemy.position.distanceTo(this.player.position);
@@ -2075,9 +2175,28 @@ class VoxelGame {
         enemy.mesh.position.copy(enemy.position);
       }
       
-      // Simple floating animation
-      const idHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      enemy.mesh.position.y = enemy.position.y + Math.sin(Date.now() * 0.002 + idHash) * 0.1;
+      // Attack animation - swing/tilt effect
+      if (enemy.attackAnimationTime) {
+        const timeSinceAttack = Date.now() - enemy.attackAnimationTime;
+        const attackDuration = 300; // 300ms attack animation
+        
+        if (timeSinceAttack < attackDuration) {
+          // Swing animation using rotation
+          const progress = timeSinceAttack / attackDuration;
+          const swingAngle = Math.sin(progress * Math.PI) * 0.3; // Swing forward and back
+          enemy.mesh.rotation.x = swingAngle;
+        } else {
+          // Reset rotation after animation
+          enemy.mesh.rotation.x = 0;
+          enemy.attackAnimationTime = null;
+        }
+      }
+      
+      // Simple floating animation (only when not attacking)
+      if (!enemy.attackAnimationTime) {
+        const idHash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        enemy.mesh.position.y = enemy.position.y + Math.sin(Date.now() * 0.002 + idHash) * 0.1;
+      }
     }
   }
 
@@ -2365,10 +2484,41 @@ class VoxelGame {
         enemy.healthBar.position.x = -(1 - enemy.health / enemy.maxHealth) / 2;
       }
     }
-    if (data.state) enemy.state = data.state;
+    if (data.state) {
+      enemy.state = data.state;
+      
+      // Handle death state from server
+      if (data.state === 'dead' && !enemy.isDead) {
+        console.log(`Server confirmed ${data.mobId} is dead`);
+        enemy.isDead = true;
+        enemy.deathTime = Date.now();
+        // Rotate mesh to horizontal (dead)
+        if (enemy.mesh) {
+          enemy.mesh.rotation.z = Math.PI / 2; // 90 degrees to lay horizontal
+          enemy.mesh.position.y = data.position[1] - 0.5; // Lower to ground
+        }
+        // Hide health bar
+        if (enemy.healthBar) {
+          enemy.healthBar.visible = false;
+        }
+      }
+    }
   }
   
   handleMobAttack(data) {
+    // Trigger attack animation for the attacking mob
+    const enemy = this.enemies.get(data.mobId);
+    
+    // Ignore attacks from dead or non-existent mobs
+    if (!enemy || enemy.isDead) {
+      console.log(`Ignoring attack from dead/missing mob: ${data.mobId}`);
+      return;
+    }
+    
+    if (enemy.mesh) {
+      enemy.attackAnimationTime = Date.now();
+    }
+    
     if (data.targetId !== this.clientId) return;
     this.player.health = Math.max(0, this.player.health - (data.damage || 0));
     this.updateStatsUI();
@@ -2412,49 +2562,64 @@ class VoxelGame {
     const damage = data.damage || 0;
     const isCritical = data.isCritical || false;
     const mobHealth = data.mobHealth || 0;
+    const mobId = data.mobId;
     
-    // Show hit feedback
-    this.showHitFeedback(damage, mobType, isCritical, mobHealth);
+    // Get mob position for 3D floating damage number
+    const enemy = this.enemies.get(mobId);
+    if (enemy && enemy.mesh) {
+      this.showFloatingDamage(damage, enemy.mesh.position, isCritical, mobHealth === 0);
+    }
+    
+    // Show death notification if mob died
+    if (mobHealth === 0) {
+      this.showMobDeathNotification(mobType);
+    }
     
     console.log(`Hit ${mobType} for ${damage} damage${isCritical ? ' (CRITICAL!)' : ''} (${mobHealth} HP remaining)`);
   }
   
-  showHitFeedback(damage, mobType, isCritical, mobHealth) {
-    // Create hit feedback element
-    const hitEl = document.createElement('div');
-    hitEl.style.cssText = `
+  showFloatingDamage(damage, position, isCritical, isDeath) {
+    // Convert 3D world position to 2D screen position
+    const vector = new THREE.Vector3(position.x, position.y + 2, position.z);
+    vector.project(this.camera);
+    
+    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+    
+    // Create floating damage number
+    const damageEl = document.createElement('div');
+    damageEl.style.cssText = `
       position: fixed;
-      top: 30%;
-      left: 50%;
+      left: ${x}px;
+      top: ${y}px;
       transform: translate(-50%, -50%);
-      background: ${isCritical ? 'rgba(255, 215, 0, 0.9)' : 'rgba(255, 100, 0, 0.9)'};
-      color: ${isCritical ? '#ff0000' : 'white'};
-      padding: 15px 30px;
-      border-radius: 8px;
-      font-size: ${isCritical ? '28px' : '22px'};
+      color: ${isCritical ? '#FFD700' : isDeath ? '#FF0000' : '#FFA500'};
+      font-size: ${isCritical ? '32px' : '24px'};
       font-weight: bold;
       z-index: 1000;
       pointer-events: none;
-      animation: hitPulse 0.6s ease-out;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-      border: ${isCritical ? '3px solid #ff0000' : '2px solid rgba(255,255,255,0.5)'};
+      animation: floatUp 1.2s ease-out;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9), -1px -1px 2px rgba(0,0,0,0.9);
+      font-family: 'Arial Black', sans-serif;
     `;
     
-    const critText = isCritical ? ' CRITICAL!' : '';
-    const healthText = mobHealth > 0 ? ` (${mobHealth} HP)` : ' (DEFEATED!)';
-    hitEl.textContent = `${damage} DMG${critText}${healthText}`;
-    
-    document.body.appendChild(hitEl);
+    damageEl.textContent = isCritical ? `${damage}!` : `${damage}`;
+    document.body.appendChild(damageEl);
     
     // Add animation keyframes if not exists
-    if (!document.getElementById('hitFeedbackStyle')) {
+    if (!document.getElementById('floatingDamageStyle')) {
       const style = document.createElement('style');
-      style.id = 'hitFeedbackStyle';
+      style.id = 'floatingDamageStyle';
       style.textContent = `
-        @keyframes hitPulse {
+        @keyframes floatUp {
           0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-          30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-          100% { transform: translate(-50%, -50%) scale(1) translateY(-20px); opacity: 0; }
+          20% { transform: translate(-50%, -60%) scale(1.2); opacity: 1; }
+          100% { transform: translate(-50%, -150%) scale(0.8); opacity: 0; }
+        }
+        @keyframes deathPulse {
+          0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1) translateY(-30px); opacity: 0; }
         }
       `;
       document.head.appendChild(style);
@@ -2462,8 +2627,39 @@ class VoxelGame {
     
     // Remove after animation
     setTimeout(() => {
-      hitEl.remove();
-    }, 600);
+      damageEl.remove();
+    }, 1200);
+  }
+  
+  showMobDeathNotification(mobType) {
+    // Create death notification
+    const deathEl = document.createElement('div');
+    deathEl.style.cssText = `
+      position: fixed;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(139, 0, 0, 0.95);
+      color: #FFD700;
+      padding: 20px 40px;
+      border-radius: 12px;
+      font-size: 28px;
+      font-weight: bold;
+      z-index: 1001;
+      pointer-events: none;
+      animation: deathPulse 1.5s ease-out;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+      border: 3px solid #FFD700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    `;
+    
+    deathEl.textContent = `${mobType.toUpperCase()} DEFEATED!`;
+    document.body.appendChild(deathEl);
+    
+    // Remove after animation
+    setTimeout(() => {
+      deathEl.remove();
+    }, 1500);
   }
   
   showDamageAlert(damage, attacker) {
@@ -3652,6 +3848,12 @@ class Enemy {
       this.mesh.receiveShadow = true;
     }
     
+    // Set userData for raycasting
+    this.mesh.userData = {
+      enemyId: this.id,
+      enemy: this
+    }
+    
     // Add health bar
     const barGeometry = new THREE.PlaneGeometry(1, 0.1);
     const barMaterial = new THREE.MeshBasicMaterial({ 
@@ -3825,27 +4027,8 @@ class Enemy {
   
   takeDamage(damage) {
     this.health = Math.max(0, this.health - damage);
-    
-    if (this.health <= 0) {
-      this.die();
-    }
-  }
-  
-  die() {
-    console.log(`Enemy ${this.id} defeated!`);
-    
-    // Remove from scene
-    if (this.mesh && this.mesh.parent) {
-      this.mesh.parent.remove(this.mesh);
-    }
-    
-    // Notify server
-    if (window.game && window.game.socket) {
-      window.game.socket.send(JSON.stringify({
-        type: MESSAGE_TYPES.MOB_DESPAWN,
-        data: { mobId: this.id }
-      }));
-    }
+    // Don't mark as dead client-side - wait for server confirmation
+    // Server will broadcast MOB_MOVE with state='dead' when mob dies
   }
 }
 
@@ -4258,9 +4441,8 @@ class Raycaster {
     // Check enemy meshes
     const enemyMeshes = [];
     game.enemies.forEach((enemy, id) => {
-      if (enemy.mesh) {
+      if (enemy.mesh && !enemy.isDead) {
         enemyMeshes.push(enemy.mesh);
-        enemyMeshes[enemyMeshes.length - 1].userData = { enemyId: id, enemy: enemy };
       }
     });
     
@@ -4270,13 +4452,22 @@ class Raycaster {
       const intersection = intersects[0];
       const distance = camera.position.distanceTo(intersection.point);
       
-      // Check if within viewing range (increased to 10 blocks for visibility)
-      if (distance <= 10) {
-        return {
-          enemy: intersection.object.userData.enemy,
-          distance: distance,
-          point: intersection.point
-        };
+      // Check if within attack range (6 blocks)
+      if (distance <= 6) {
+        // Find the userData - might be on parent mesh
+        let userData = intersection.object.userData;
+        if (!userData.enemy && intersection.object.parent) {
+          userData = intersection.object.parent.userData;
+        }
+        
+        if (userData && userData.enemy) {
+          console.log(`Target locked: ${userData.enemy.type} at distance ${distance.toFixed(2)}`);
+          return {
+            enemy: userData.enemy,
+            distance: distance,
+            point: intersection.point
+          };
+        }
       }
     }
     
