@@ -19,6 +19,16 @@ def run_all_tests():
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     
+    # Print summary
+    print("\n" + "=" * 70)
+    total = result.testsRun
+    failures = len(result.failures)
+    errors = len(result.errors)
+    skipped = len(result.skipped)
+    passed = total - failures - errors - skipped
+    print(f"TOTAL: {total}  |  PASSED: {passed}  |  FAILED: {failures}  |  ERRORS: {errors}  |  SKIPPED: {skipped}")
+    print("=" * 70)
+    
     return result.wasSuccessful()
 
 def run_specific_suite(suite_name):

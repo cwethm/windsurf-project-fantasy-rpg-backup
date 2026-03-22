@@ -540,6 +540,11 @@ MINING_COOLDOWN = 0.1  # Seconds between block breaks
 PLACING_COOLDOWN = 0.1  # Seconds between block placements
 ITEM_LOCK_TIMEOUT = 420  # 7 minutes in seconds
 
+# Rate limiting
+RATE_LIMIT_WINDOW = 1.0    # Window in seconds
+RATE_LIMIT_MAX_MSGS = 60   # Max messages per window (move msgs arrive ~20/s)
+RATE_LIMIT_WARN_THRESHOLD = 3  # Warnings before disconnect
+
 # Block hardness (seconds to mine with bare hands)
 BLOCK_HARDNESS = {
     BLOCK_TYPES['GRASS']: 0.6,
@@ -1000,6 +1005,7 @@ class Container:
 class World:
     def __init__(self, db=None, world_generator=None):
         self.chunks = {}
+        self.dirty_chunks = set()  # Track chunks modified since last save
         self.containers = {}  # position string -> Container
         self.item_entities = {}  # position string -> {type, harvester_id, spawn_time}
         self.db = db
@@ -1066,6 +1072,7 @@ class World:
 
         index = self.get_block_index(local_x, y, local_z)
         chunk[index] = block_type
+        self.dirty_chunks.add(chunk_key)
         return True
     
     def spawn_item_entity(self, x: float, y: float, z: float, item_type: int, harvester_id: str = None, count: int = 1):
@@ -1116,6 +1123,9 @@ class VoxelServer:
         self.player_chunk_positions = {}  # Track player positions for chunk management
         self.client_loaded_chunks: Dict[str, set] = {}  # client_id -> set of (cx,cz) sent
         self.mob_manager = MobManager()
+        
+        # Rate limiting: per-client message counters
+        self.client_msg_counts: Dict[str, List] = {}  # client_id -> [count, window_start, warnings]
         
         # NPC and quest system
         self.npcs: Dict[str, NPC] = {}
@@ -1228,13 +1238,28 @@ class VoxelServer:
         try:
             async for message in websocket:
                 try:
+                    # Rate limiting
+                    if not self.check_rate_limit(client_id):
+                        entry = self.client_msg_counts.get(client_id)
+                        if entry and entry[2] >= RATE_LIMIT_WARN_THRESHOLD:
+                            await websocket.close(1008, "Rate limit exceeded")
+                            break
+                        continue  # Drop message but keep connection for warnings
+                    
                     data = json.loads(message)
                     await self.handle_message(client_id, data)
                 except json.JSONDecodeError:
-                    logger.error(f"Invalid JSON from client {client_id}")
+                    logger.warning(f"Invalid JSON from client {client_id}")
+                except websockets.exceptions.ConnectionClosed:
+                    break
+                except Exception as e:
+                    logger.error(f"Error handling message from {client_id}: {e}", exc_info=True)
         except websockets.exceptions.ConnectionClosed:
             pass
+        except Exception as e:
+            logger.error(f"Unexpected error in client handler for {client_id}: {e}", exc_info=True)
         finally:
+            self.client_msg_counts.pop(client_id, None)
             await self.handle_disconnect(client_id)
     
     async def handle_disconnect(self, client_id: str):
@@ -1380,10 +1405,49 @@ class VoxelServer:
             delattr(websocket, 'session_id')
             logger.info(f"Client {client_id} logged out")
     
+    def check_rate_limit(self, client_id: str) -> bool:
+        """Check if client has exceeded message rate limit. Returns True if allowed."""
+        now = time.time()
+        
+        if client_id not in self.client_msg_counts:
+            self.client_msg_counts[client_id] = [1, now, 0]  # [count, window_start, warnings]
+            return True
+        
+        entry = self.client_msg_counts[client_id]
+        elapsed = now - entry[1]
+        
+        if elapsed >= RATE_LIMIT_WINDOW:
+            # New window
+            entry[0] = 1
+            entry[1] = now
+            return True
+        
+        entry[0] += 1
+        if entry[0] > RATE_LIMIT_MAX_MSGS:
+            entry[2] += 1  # Increment warnings
+            if entry[2] >= RATE_LIMIT_WARN_THRESHOLD:
+                logger.warning(f"Rate limit exceeded for {client_id}: {entry[0]} msgs in {elapsed:.2f}s — disconnecting")
+                return False
+            else:
+                logger.warning(f"Rate limit warning {entry[2]}/{RATE_LIMIT_WARN_THRESHOLD} for {client_id}: {entry[0]} msgs in {elapsed:.2f}s")
+                return False
+        
+        return True
+    
     async def handle_message(self, client_id: str, message: Dict[str, Any]):
         """Handle incoming message from client"""
+        if not isinstance(message, dict):
+            logger.warning(f"Non-dict message from {client_id}: {type(message)}")
+            return
+        
         message_type = message.get('type')
+        if not message_type or not isinstance(message_type, str):
+            logger.warning(f"Missing or invalid message type from {client_id}")
+            return
+        
         data = message.get('data', {})
+        if not isinstance(data, dict):
+            data = {}
         
         # Handle authentication messages
         if message_type == MESSAGE_TYPES['REGISTER']:
@@ -2864,12 +2928,15 @@ class VoxelServer:
         logger.info("Saving world state...")
         start_time = time.time()
         
-        # Save all loaded chunks
+        # Save only dirty (modified) chunks
         chunks_saved = 0
-        for chunk_key, chunk_data in self.world.chunks.items():
-            chunk_x, chunk_z = map(int, chunk_key.split(','))
-            self.db.save_chunk(chunk_x, chunk_z, chunk_data)
-            chunks_saved += 1
+        for chunk_key in list(self.world.dirty_chunks):
+            chunk_data = self.world.chunks.get(chunk_key)
+            if chunk_data:
+                chunk_x, chunk_z = map(int, chunk_key.split(','))
+                self.db.save_chunk(chunk_x, chunk_z, chunk_data)
+                chunks_saved += 1
+        self.world.dirty_chunks.clear()
         
         # Save item entities
         entities = []
@@ -2994,16 +3061,39 @@ class VoxelServer:
         if time_delta <= 0:
             return False
         
-        # Calculate distance moved
+        # Calculate distance moved (horizontal and total)
         dx = new_position[0] - player.last_position[0]
         dy = new_position[1] - player.last_position[1]
         dz = new_position[2] - player.last_position[2]
-        distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+        horizontal_distance = math.sqrt(dx*dx + dz*dz)
+        total_distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+        
+        # Teleport detection: reject single-frame jumps > 50 blocks
+        # (legitimate movement at MAX_SPEED=20 over 5s = 100 blocks, but per-tick is much less)
+        TELEPORT_THRESHOLD = 50.0
+        if total_distance > TELEPORT_THRESHOLD:
+            logger.warning(f"Teleport detected for {player.username}: {total_distance:.1f} blocks in {time_delta:.2f}s "
+                          f"from {player.last_position} to {new_position}")
+            player.speed_violations += 5  # Heavy penalty
+            if player.speed_violations > 10:
+                logger.warning(f"Kicking player {player.username} for teleport hacking")
+            return False
         
         # Calculate speed (blocks per second)
-        speed = distance / time_delta
+        speed = total_distance / time_delta
         
-        # Check if speed is within limits
+        # Y-axis validation: allow falling (gravity) but limit upward speed
+        # Legitimate jump gives ~15 blocks/s upward; anything beyond that is suspicious
+        MAX_UPWARD_SPEED = 25.0
+        if time_delta > 0.05 and dy > 0:
+            upward_speed = dy / time_delta
+            if upward_speed > MAX_UPWARD_SPEED:
+                logger.warning(f"Player {player.username} upward speed violation: {upward_speed:.2f} blocks/s")
+                player.speed_violations += 2
+                if player.speed_violations > 10:
+                    return False
+        
+        # Check if horizontal speed is within limits
         max_speed = MAX_SPEED if player.on_ground else MAX_SPEED * 1.5  # Allow 50% more speed in air
         if speed > max_speed:
             logger.warning(f"Player {player.username} speed violation: {speed:.2f} blocks/s (max: {max_speed:.1f})")
@@ -3014,7 +3104,7 @@ class VoxelServer:
                 logger.warning(f"Kicking player {player.username} for excessive speed violations")
                 return False
         else:
-            # Reset violations on valid movement
+            # Decay violations on valid movement
             player.speed_violations = max(0, player.speed_violations - 1)
         
         # Update last position and time
