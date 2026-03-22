@@ -999,27 +999,29 @@ class VoxelGame {
   }
   
   async createPlayerMesh() {
-    // Create a simple player mesh for the local player (mostly for testing)
-    // In first-person view, you won't see this
+    // Create animated avatar for the local player
     try {
-      const voxModel = await this.loadPlayerVOXModel();
-      if (voxModel) {
-        this.player.mesh = voxModel.clone();
-        this.player.mesh.material = this.player.mesh.material.clone();
-        this.player.mesh.material.color.set(0x4488ff); // Blue for local player
-      } else {
-        // Fallback
-        const geometry = new THREE.BoxGeometry(0.8, 1.8, 0.8);
-        const material = new THREE.MeshLambertMaterial({ color: 0x4488ff });
-        this.player.mesh = new THREE.Mesh(geometry, material);
-      }
-      
+      this.player.avatar = new PlayerAvatar();
+      this.player.mesh = this.player.avatar.getMesh();
       this.player.mesh.position.copy(this.player.position);
-      this.player.mesh.castShadow = true;
+      
+      // Customize colors for local player (blue theme)
+      this.player.avatar.setColors(
+        0xffdbac, // skin
+        0x4488ff, // blue shirt
+        0x2c3e50, // dark pants
+        0x8b4513  // brown hair
+      );
+      
       // Don't add to scene for first-person view
       // this.scene.add(this.player.mesh);
     } catch (error) {
-      console.error('Failed to create player mesh:', error);
+      console.error('Failed to create player avatar:', error);
+      // Fallback to simple cube
+      const geometry = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+      const material = new THREE.MeshLambertMaterial({ color: 0x4488ff });
+      this.player.mesh = new THREE.Mesh(geometry, material);
+      this.player.mesh.position.copy(this.player.position);
     }
   }
   
@@ -1380,6 +1382,11 @@ class VoxelGame {
       
       if (this.player.canAttack()) {
         this.player.attack();
+        
+        // Trigger attack animation
+        if (this.player && this.player.avatar) {
+          this.player.avatar.attack();
+        }
         
         // Calculate damage based on weapon
         const weapon = this.inventory.slots[this.inventory.selectedSlot];
@@ -1756,13 +1763,38 @@ class VoxelGame {
     
     const player = this.otherPlayers.get(data.playerId);
     if (player) {
-      console.log(`Moving player ${data.playerId} to`, data.position);
-      if (Array.isArray(data.position)) {
-        player.position.fromArray(data.position);
+      // Store last position for velocity calculation
+      if (!player.lastPosition) {
+        player.lastPosition = player.position.clone();
       } else {
-        player.position.set(data.position.x, data.position.y, data.position.z);
+        player.lastPosition.copy(player.position);
       }
+      
+      // Handle both array [x,y,z] and object {x,y,z} position formats
+      let newPos;
+      if (Array.isArray(data.position)) {
+        newPos = new THREE.Vector3(data.position[0], data.position[1], data.position[2]);
+      } else {
+        newPos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
+      }
+      
+      // Smoothly interpolate position
+      player.position.lerp(newPos, 0.3);
       player.mesh.position.copy(player.position);
+      
+      // Calculate velocity for animation
+      if (player.avatar && player.lastPosition) {
+        player.velocity = player.position.clone().sub(player.lastPosition);
+      }
+      
+      // Update rotation if provided
+      if (data.rotation !== undefined) {
+        if (Array.isArray(data.rotation)) {
+          player.rotation = data.rotation;
+        } else {
+          player.rotation = [data.rotation.yaw || 0, data.rotation.pitch || 0];
+        }
+      }
       
       // Handle death state
       if (data.isDead && !player.isDead) {
@@ -1784,7 +1816,8 @@ class VoxelGame {
         }
       }
     } else {
-      console.log(`Player ${data.playerId} not found in otherPlayers`);
+      console.log(`Player ${data.playerId} not found in otherPlayers (have ${this.otherPlayers.size} players)`);
+      console.log('Available player IDs:', Array.from(this.otherPlayers.keys()));
     }
   }
 
@@ -1846,24 +1879,29 @@ class VoxelGame {
 
   async createOtherPlayer(data) {
     const playerId = data.id || data.playerId;  // Handle both field names
+    
+    // Check if player already exists
+    if (this.otherPlayers.has(playerId)) {
+      console.log(`Player ${data.username} (${playerId}) already exists, skipping creation`);
+      return;
+    }
+    
     console.log(`Creating other player: ${data.username} (${playerId}) at position`, data.position);
+    console.log('Full player data:', data);
     
     let mesh;
     
-    // Try to use VOX model if available
-    const voxModel = await this.loadPlayerVOXModel();
-    if (voxModel) {
-      mesh = voxModel.clone();
-      // Give each player a unique color based on their username
-      const hue = data.username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360;
-      mesh.material = mesh.material.clone();
-      mesh.material.color.setHSL(hue / 360, 0.7, 0.5);
-    } else {
-      // Fallback to simple box
-      const geometry = new THREE.BoxGeometry(0.8, 1.8, 0.8);
-      const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-      mesh = new THREE.Mesh(geometry, material);
-    }
+    // Create animated avatar for other players
+    const avatar = new PlayerAvatar();
+    mesh = avatar.getMesh();
+    
+    // Customize colors for other players (orange theme)
+    avatar.setColors(
+      0xffdbac, // skin
+      0xff8844, // orange shirt
+      0x2c3e50, // dark pants
+      0x654321  // darker brown hair
+    );
     
     // Handle both array and object position formats
     let x, y, z;
@@ -1881,13 +1919,32 @@ class VoxelGame {
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     
+    // Disable frustum culling to ensure players are always visible
+    mesh.frustumCulled = false;
+    mesh.traverse((child) => {
+      if (child.isMesh) {
+        child.frustumCulled = false;
+      }
+    });
+    
     this.scene.add(mesh);
+    console.log(`✅ Added other player ${data.username} to scene`);
+    console.log(`   Position: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
+    console.log(`   Mesh parent: ${!!mesh.parent}, visible: ${mesh.visible}, frustumCulled: ${mesh.frustumCulled}`);
+    console.log(`   Total other players: ${this.otherPlayers.size + 1}`);
+    
     this.otherPlayers.set(playerId, {
       id: playerId,
       username: data.username,
       position: new THREE.Vector3(x, y, z),
-      mesh
+      mesh: mesh,
+      avatar: avatar,
+      isDead: data.isDead || false,
+      velocity: new THREE.Vector3(0, 0, 0),
+      lastPosition: new THREE.Vector3(x, y, z)
     });
+    
+    console.log(`   Stored in otherPlayers map with key: ${playerId}`);
   }
 
   updatePlayerCount(count) {
@@ -1903,6 +1960,12 @@ class VoxelGame {
       this.updatePlayer();
       this.updateCamera();
       this.physics.update(this.player, this.world);
+      
+      // Sync mesh position with player position after physics update
+      if (this.player.mesh) {
+        this.player.mesh.position.copy(this.player.position);
+      }
+      
       this.raycaster.update(this.camera, this.scene);
       this.ui.updateTargetName(this.raycaster, this.camera, this.world, this);
       this.updateMining();
@@ -1940,6 +2003,37 @@ class VoxelGame {
       this.biomeParticles.forEach(particle => {
         if (particle.animate) particle.animate();
       });
+    }
+    
+    // Update player avatar animation
+    if (this.player && this.player.avatar) {
+      const isJumping = this.player.velocity.y > 0.1;
+      const isMining = this.mining !== null;
+      this.player.avatar.update(deltaTime, this.player.velocity, isJumping, isMining);
+      
+      // Update head rotation based on camera view angle
+      if (this.controls) {
+        this.player.avatar.setHeadRotation(this.controls.yaw, this.controls.pitch);
+      }
+    }
+    
+    // Update other player animations
+    for (const player of this.otherPlayers.values()) {
+      if (player.avatar) {
+        const isJumping = player.velocity.y > 0.1;
+        const isMining = false; // Other players don't mine
+        player.avatar.update(deltaTime, player.velocity, isJumping, isMining);
+        
+        // Update head rotation based on movement direction or stored rotation
+        if (player.rotation) {
+          // Use server-provided rotation (yaw, pitch)
+          player.avatar.setHeadRotation(player.rotation[0], player.rotation[1] || 0);
+        } else if (player.velocity.lengthSq() > 0.001) {
+          // Calculate head rotation from movement direction
+          const moveAngle = Math.atan2(player.velocity.x, player.velocity.z);
+          player.avatar.setHeadRotation(moveAngle, 0);
+        }
+      }
     }
     
     this.renderer.render(this.scene, this.camera);
@@ -2022,7 +2116,8 @@ class VoxelGame {
         type: MESSAGE_TYPES.MOVE,
         data: {
           position: [this.player.position.x, this.player.position.y, this.player.position.z],
-          velocity: [this.player.velocity.x, this.player.velocity.y, this.player.velocity.z]
+          velocity: [this.player.velocity.x, this.player.velocity.y, this.player.velocity.z],
+          rotation: [this.controls.yaw, this.controls.pitch]
         }
       }));
       this.lastPositionUpdate = Date.now();
@@ -2426,9 +2521,18 @@ class VoxelGame {
   // Enemy methods
   async spawnEnemy(data) {
     const existing = this.enemies.get(data.id);
-    if (existing) return;
+    if (existing) {
+      // Enemy already exists, just update position and ensure mesh is in scene
+      if (existing.mesh && !existing.mesh.parent) {
+        this.scene.add(existing.mesh);
+        console.log(`Re-added ${existing.type} mesh to scene`);
+      }
+      return;
+    }
     const enemy = new Enemy(data.id, data.type, {
-      x: data.position[0], y: data.position[1], z: data.position[2]
+      x: data.position[0],
+      y: data.position[1],
+      z: data.position[2]
     });
     if (data.health !== undefined) {
       enemy.health = data.health;
@@ -2439,13 +2543,24 @@ class VoxelGame {
       await enemy.createMesh();
       if (!enemy.mesh) {
         console.error(`Failed to create mesh for enemy ${data.id}`);
+        this.enemies.delete(data.id);
         return;
       }
+      
+      // Ensure mesh is added to scene
       this.scene.add(enemy.mesh);
+      
+      // Disable frustum culling to prevent invisible mobs
+      enemy.mesh.frustumCulled = false;
+      if (enemy.healthBar) {
+        enemy.healthBar.frustumCulled = false;
+      }
+      
       console.log(`Spawned ${enemy.type} at position:`, enemy.mesh.position, 'Camera at:', this.camera.position, 'Distance:', enemy.mesh.position.distanceTo(this.camera.position));
       console.log(`Mesh details: parent=${!!enemy.mesh.parent}, visible=${enemy.mesh.visible}, frustumCulled=${enemy.mesh.frustumCulled}, renderOrder=${enemy.mesh.renderOrder}, layers=${enemy.mesh.layers.mask}`);
     } catch (error) {
       console.error(`Error spawning enemy ${data.id}:`, error);
+      this.enemies.delete(data.id);
     }
   }
   
@@ -3859,12 +3974,12 @@ class Enemy {
     const barMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xff0000,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
+      depthTest: false
     });
     this.healthBar = new THREE.Mesh(barGeometry, barMaterial);
-    // Position health bar above the mesh
-    const healthBarHeight = this.type === 'bear' ? 2.0 : 1.5;
-    this.healthBar.position.y = healthBarHeight;
+    this.healthBar.position.set(0, 2, 0);
+    this.healthBar.renderOrder = 999; // Render on top
     this.mesh.add(this.healthBar);
     
     // Add floating mob indicator

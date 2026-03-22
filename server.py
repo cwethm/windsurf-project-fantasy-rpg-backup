@@ -1740,7 +1740,8 @@ class VoxelServer:
         
         # Notify other players
         await self.broadcast(MESSAGE_TYPES['PLAYER_JOIN'], {
-            'playerId': client_id,
+            'id': client_id,
+            'playerId': client_id,  # Keep for backwards compatibility
             'username': player.username,
             'position': player.position
         }, exclude_client=client_id)
@@ -1820,6 +1821,10 @@ class VoxelServer:
         player.position = new_position
         player.velocity = new_velocity
         
+        # Update rotation if provided
+        if 'rotation' in data:
+            player.rotation = data['rotation']
+        
         new_chunk_x = int(player.position[0] // CHUNK_SIZE)
         new_chunk_z = int(player.position[2] // CHUNK_SIZE)
         
@@ -1830,7 +1835,8 @@ class VoxelServer:
         await self.broadcast(MESSAGE_TYPES['PLAYER_MOVE'], {
             'playerId': client_id,
             'position': player.position,
-            'velocity': player.velocity
+            'velocity': player.velocity,
+            'rotation': player.rotation
         }, exclude_client=client_id)
     
     async def handle_jump(self, client_id: str):
