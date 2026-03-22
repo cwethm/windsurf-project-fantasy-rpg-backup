@@ -48,7 +48,7 @@ class Database:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS players (
                     id TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL,
+                    user_id TEXT,
                     username TEXT NOT NULL,
                     position_x REAL DEFAULT 0,
                     position_y REAL DEFAULT 0,
@@ -96,18 +96,47 @@ class Database:
                 )
             """)
             
+            # Migrate existing players table: make user_id nullable
+            try:
+                cursor = conn.execute("PRAGMA table_info(players)")
+                columns = {row[1]: row for row in cursor.fetchall()}
+                if 'user_id' in columns and columns['user_id'][3] == 1:  # notnull=1
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS players_new (
+                            id TEXT PRIMARY KEY,
+                            user_id TEXT,
+                            username TEXT NOT NULL,
+                            position_x REAL DEFAULT 0,
+                            position_y REAL DEFAULT 0,
+                            position_z REAL DEFAULT 0,
+                            inventory TEXT DEFAULT '[]',
+                            health INTEGER DEFAULT 100,
+                            level INTEGER DEFAULT 1,
+                            experience INTEGER DEFAULT 0,
+                            last_login TIMESTAMP,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users (id)
+                        )
+                    """)
+                    conn.execute("INSERT OR IGNORE INTO players_new SELECT * FROM players")
+                    conn.execute("DROP TABLE players")
+                    conn.execute("ALTER TABLE players_new RENAME TO players")
+                    logger.info("Migrated players table: user_id is now nullable")
+            except Exception as e:
+                logger.warning(f"Players table migration check: {e}")
+
             conn.commit()
     
-    def save_player(self, player_id: str, username: str, position: Dict, inventory: List, health: int = 100):
+    def save_player(self, player_id: str, username: str, position: Dict, inventory: List, health: int = 100, user_id: str = None):
         """Save player data to database"""
         with self.lock:
             try:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.execute("""
                         INSERT OR REPLACE INTO players 
-                        (id, username, position_x, position_y, position_z, inventory, health, last_login)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (player_id, username, position['x'], position['y'], position['z'], 
+                        (id, user_id, username, position_x, position_y, position_z, inventory, health, last_login)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (player_id, user_id or player_id, username, position['x'], position['y'], position['z'], 
                           json.dumps(inventory), health, time.time()))
                     conn.commit()
             except Exception as e:

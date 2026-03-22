@@ -130,7 +130,7 @@ const ITEM_TYPES = {
   BARK: 307,
   SAP: 308,
   RESIN: 309,
-  LEAVES: 310,
+  LEAF_BUNDLE: 310,
   REED: 311,
   GRASS_FIBER: 312,
   HEMP_STALK: 313,
@@ -170,7 +170,7 @@ const ITEM_TYPES = {
   MARBLE: 345,
   OBSIDIAN: 346,
   GRAVEL: 347,
-  SAND: 348,
+  SAND_PILE: 348,
   CLAY: 349,
   CHALK: 350,
   SALT: 351,
@@ -185,7 +185,7 @@ const ITEM_TYPES = {
   BRONZE_INGOT: 359,
   STEEL_INGOT: 360,
   // Processed materials
-  PLANKS: 361,
+  SHAPED_PLANKS: 361,
   POLE: 362,
   CARVED_WOOD: 363,
   PULP: 364,
@@ -559,7 +559,7 @@ const CRAFTING_RECIPES = [
     id: 'wooden_sword',
     result: { type: ITEM_TYPES.WOODEN_SWORD, count: 1 },
     ingredients: [
-      { type: ITEM_TYPES.PLANKS, count: 2 },
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 2 },
       { type: ITEM_TYPES.STICK, count: 1 }
     ],
     shape: [
@@ -610,7 +610,7 @@ const CRAFTING_RECIPES = [
   {
     result: { type: ITEM_TYPES.WOODEN_PICKAXE, count: 1 },
     ingredients: [
-      { type: ITEM_TYPES.PLANKS, count: 3 },
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 3 },
       { type: ITEM_TYPES.STICK, count: 2 }
     ],
     shape: [
@@ -658,7 +658,7 @@ const CRAFTING_RECIPES = [
   // Basic materials
   {
     id: 'planks',
-    result: { type: ITEM_TYPES.PLANKS, count: 4 },
+    result: { type: ITEM_TYPES.SHAPED_PLANKS, count: 4 },
     ingredients: [
       { type: BLOCK_TYPES.WOOD, count: 1 }
     ],
@@ -670,7 +670,7 @@ const CRAFTING_RECIPES = [
   },
   {
     id: 'planks_from_log',
-    result: { type: ITEM_TYPES.PLANKS, count: 4 },
+    result: { type: ITEM_TYPES.SHAPED_PLANKS, count: 4 },
     ingredients: [
       { type: ITEM_TYPES.WOOD_LOG, count: 1 }
     ],
@@ -684,7 +684,7 @@ const CRAFTING_RECIPES = [
     id: 'sticks',
     result: { type: ITEM_TYPES.STICK, count: 4 },
     ingredients: [
-      { type: ITEM_TYPES.PLANKS, count: 2 }
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 2 }
     ],
     shape: [
       [0, 1, 0],
@@ -708,7 +708,7 @@ const CRAFTING_RECIPES = [
     id: 'crafting_table',
     result: { type: BLOCK_TYPES.CRAFTING_TABLE, count: 1 },
     ingredients: [
-      { type: ITEM_TYPES.PLANKS, count: 4 }
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 4 }
     ],
     shape: [
       [1, 1, 0],
@@ -719,7 +719,7 @@ const CRAFTING_RECIPES = [
   {
     result: { type: BLOCK_TYPES.CHEST, count: 1 },
     ingredients: [
-      { type: ITEM_TYPES.PLANKS, count: 8 }
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 8 }
     ],
     shape: [
       [1, 1, 1],
@@ -3928,7 +3928,7 @@ class Enemy {
   
   async createMesh() {
     const voxFileMap = {
-      zombie: 'zombie', skeleton: 'skeleton', bear: 'bear', slime: 'slime',
+      zombie: 'zombie', skeleton: 'skeleton', bear: 'bear', slime: 'green_slime',
       boar: 'boar', spider: 'spider', cow: 'cow', goblin: 'goblin',
       sheep: 'sheep', rabbit: 'rabbit', deer: 'deer', chicken: 'chicken', troll: 'troll'
     };
@@ -4980,7 +4980,7 @@ class Crafting {
       } else if (this.currentCategory === 'armor') {
         return resultType >= 200 && resultType < 240;
       } else if (this.currentCategory === 'materials') {
-        return resultType === ITEM_TYPES.PLANKS || 
+        return resultType === ITEM_TYPES.SHAPED_PLANKS || 
                resultType === ITEM_TYPES.STICK || 
                resultType === ITEM_TYPES.IRON_INGOT ||
                resultType === ITEM_TYPES.GOLD_INGOT ||

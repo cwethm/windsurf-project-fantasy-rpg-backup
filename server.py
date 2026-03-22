@@ -23,6 +23,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Silence noisy websockets debug logging
+logging.getLogger('websockets').setLevel(logging.INFO)
+logging.getLogger('websockets.server').setLevel(logging.INFO)
+
 # Anti-cheat constants
 MAX_MOVE_SPEED = 10.0  # Maximum blocks per second
 MINING_COOLDOWN = 0.1  # Minimum time between block breaks (seconds)
@@ -91,17 +95,17 @@ CRAFTING_RECIPES = {
         'ingredients': [
             {'type': ITEM_TYPES['WOOD'], 'count': 1}
         ],
-        'result': {'type': ITEM_TYPES['PLANKS'], 'count': 4}
+        'result': {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 4}
     },
     'planks_from_log': {
         'ingredients': [
             {'type': ITEM_TYPES['WOOD_LOG'], 'count': 1}
         ],
-        'result': {'type': ITEM_TYPES['PLANKS'], 'count': 4}
+        'result': {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 4}
     },
     'crafting_table': {
         'ingredients': [
-            {'type': ITEM_TYPES['PLANKS'], 'count': 4}
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 4}
         ],
         'result': {'type': ITEM_TYPES['CRAFTING_TABLE'], 'count': 1}
     },
@@ -113,7 +117,7 @@ CRAFTING_RECIPES = {
     },
     'chest': {
         'ingredients': [
-            {'type': ITEM_TYPES['PLANKS'], 'count': 8}
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 8}
         ],
         'result': {'type': ITEM_TYPES['CHEST'], 'count': 1}
     },
@@ -441,7 +445,7 @@ CRAFTING_RECIPES = {
     },
     'carpentry_bench': {
         'ingredients': [
-            {'type': ITEM_TYPES['PLANKS'], 'count': 4},
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 4},
             {'type': ITEM_TYPES['POLE'], 'count': 2}
         ],
         'result': {'type': ITEM_TYPES['CARPENTRY_BENCH'], 'count': 1}
@@ -553,7 +557,7 @@ BLOCK_DROPS = {
     BLOCK_TYPES['DIRT']: ITEM_TYPES['DIRT'],
     BLOCK_TYPES['STONE']: ITEM_TYPES['COBBLESTONE'],
     BLOCK_TYPES['WOOD']: ITEM_TYPES['WOOD'],
-    BLOCK_TYPES['LEAVES']: ITEM_TYPES['LEAVES'],
+    BLOCK_TYPES['LEAVES']: ITEM_TYPES['LEAF_BUNDLE'],
     BLOCK_TYPES['SAND']: ITEM_TYPES['SAND'],
     BLOCK_TYPES['CHEST']: ITEM_TYPES['CHEST'],
     BLOCK_TYPES['LOG']: ITEM_TYPES['LOG'],
@@ -571,9 +575,9 @@ BLOCK_DROPS = {
     BLOCK_TYPES['OAK_LOG']: ITEM_TYPES['WOOD_LOG'],
     BLOCK_TYPES['PINE_LOG']: ITEM_TYPES['WOOD_LOG'],
     BLOCK_TYPES['BIRCH_LOG']: ITEM_TYPES['WOOD_LOG'],
-    BLOCK_TYPES['OAK_LEAVES']: ITEM_TYPES['LEAVES'],
-    BLOCK_TYPES['PINE_LEAVES']: ITEM_TYPES['LEAVES'],
-    BLOCK_TYPES['BIRCH_LEAVES']: ITEM_TYPES['LEAVES'],
+    BLOCK_TYPES['OAK_LEAVES']: ITEM_TYPES['LEAF_BUNDLE'],
+    BLOCK_TYPES['PINE_LEAVES']: ITEM_TYPES['LEAF_BUNDLE'],
+    BLOCK_TYPES['BIRCH_LEAVES']: ITEM_TYPES['LEAF_BUNDLE'],
     BLOCK_TYPES['BERRY_BUSH']: ITEM_TYPES['BERRIES'],
     BLOCK_TYPES['THORN_BUSH']: ITEM_TYPES['BRANCH'],
     BLOCK_TYPES['HERB_SHRUB']: ITEM_TYPES['HERB'],
@@ -1686,7 +1690,7 @@ class VoxelServer:
             player.inventory.add_item(ITEM_TYPES['WOODEN_PICKAXE'], 1)
             player.inventory.add_item(ITEM_TYPES['WOODEN_SWORD'], 1)
             player.inventory.add_item(ITEM_TYPES['WOOD'], 32)
-            player.inventory.add_item(ITEM_TYPES['PLANKS'], 32)
+            player.inventory.add_item(ITEM_TYPES['SHAPED_PLANKS'], 32)
             player.inventory.add_item(ITEM_TYPES['COBBLESTONE'], 32)
             player.inventory.add_item(ITEM_TYPES['STONE'], 32)
             player.inventory.add_item(ITEM_TYPES['DIRT'], 16)
