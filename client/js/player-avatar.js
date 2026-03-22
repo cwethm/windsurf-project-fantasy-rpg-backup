@@ -5,7 +5,9 @@
 
 class PlayerAvatar {
     constructor() {
-        this.group = new THREE.Group();
+        this.wrapper = new THREE.Group(); // Outer group: game.js positions this
+        this.group = new THREE.Group();   // Inner group: holds model with scale + offset
+        this.wrapper.add(this.group);
         this.bones = {};
         this.animations = {};
         this.currentAnimation = 'idle';
@@ -292,7 +294,7 @@ class PlayerAvatar {
     }
     
     getMesh() {
-        return this.group;
+        return this.wrapper;
     }
     
     /**
@@ -311,11 +313,11 @@ class PlayerAvatar {
     }
     
     setPosition(x, y, z) {
-        this.group.position.set(x, y, z);
+        this.wrapper.position.set(x, y, z);
     }
     
     setRotation(x, y, z) {
-        this.group.rotation.set(x, y, z);
+        this.wrapper.rotation.set(x, y, z);
     }
     
     // Trigger attack animation
