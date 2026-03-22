@@ -29,6 +29,8 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         # Create mock world
         self.world = Mock()
         self.world.spawn_item_entity = Mock()
+        self.world.has_line_of_sight = Mock(return_value=True)
+        self.world.is_position_blocked = Mock(return_value=False)
         self.server.world = self.world
         
     async def test_complete_combat_scenario(self):
@@ -47,7 +49,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         current_time = 1.0
         
         # Tick 1: Mob detects and starts chasing
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         self.assertEqual(mob.state, 'chasing')
         self.assertEqual(mob.target_player_id, player.id)
         
@@ -56,7 +58,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         current_time = 3.0
         
         # Tick 2: Mob attacks
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         self.assertEqual(mob.state, 'attacking')
         self.assertLess(player.health, player.max_health)
         
@@ -85,7 +87,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         mob.last_attack_time = 0.0
         
         # Mob attacks (troll does 20 damage)
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Player should be dead
         self.assertTrue(player.is_dead)
@@ -114,9 +116,9 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
             mob.last_attack_time = 0.0
             
         # All mobs should attack
-        await self.manager._tick_mob(mob1, players, self.server, current_time)
-        await self.manager._tick_mob(mob2, players, self.server, current_time)
-        await self.manager._tick_mob(mob3, players, self.server, current_time)
+        await self.manager._tick_mob(mob1, players, self.world, self.server, current_time)
+        await self.manager._tick_mob(mob2, players, self.world, self.server, current_time)
+        await self.manager._tick_mob(mob3, players, self.world, self.server, current_time)
         
         # Player should have taken damage from at least some mobs
         # (some might not be in attack range depending on exact positioning)
@@ -167,7 +169,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         current_time = 1.0
         
         # Initial tick - should target player1 (closer)
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         self.assertEqual(mob.target_player_id, player1.id)
         
         # Player2 moves closer
@@ -175,7 +177,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         current_time = 2.0
         
         # Should switch to player2
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         self.assertEqual(mob.target_player_id, player2.id)
         
     async def test_mob_loses_aggro_when_player_dies(self):
@@ -195,7 +197,7 @@ class TestMobPlayerIntegration(unittest.IsolatedAsyncioTestCase):
         player.is_dead = True
         
         current_time = 1.0
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should return to idle
         self.assertEqual(mob.state, 'idle')
@@ -267,8 +269,12 @@ class TestMobSpawningIntegration(unittest.IsolatedAsyncioTestCase):
         self.manager = MobManager()
         self.server = Mock()
         self.server.broadcast = AsyncMock()
+        self.server.send_to_client = AsyncMock()
+        self.server._find_client_by_player_id = Mock(return_value='client1')
         self.world = Mock()
         self.world.get_block = Mock(return_value=1)
+        self.world.has_line_of_sight = Mock(return_value=True)
+        self.world.is_position_blocked = Mock(return_value=False)
         
     async def test_no_spawn_without_players(self):
         """Test mobs don't spawn when no players online"""
@@ -332,6 +338,9 @@ class TestMobCollisionIntegration(unittest.IsolatedAsyncioTestCase):
         self.manager = MobManager()
         self.server = Mock()
         self.server.broadcast = AsyncMock()
+        self.world = Mock()
+        self.world.has_line_of_sight = Mock(return_value=True)
+        self.world.is_position_blocked = Mock(return_value=False)
         
     async def test_mob_separation_prevents_stacking(self):
         """Test multiple mobs separate when too close"""
@@ -351,7 +360,7 @@ class TestMobCollisionIntegration(unittest.IsolatedAsyncioTestCase):
         for _ in range(10):
             current_time = 1.0
             for mob in mobs:
-                await self.manager._tick_mob(mob, players, self.server, current_time)
+                await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
                 
         # Check that mobs have separated
         positions = [(m.position[0], m.position[2]) for m in mobs]

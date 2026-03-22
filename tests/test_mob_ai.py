@@ -24,6 +24,9 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         self.server.broadcast = AsyncMock()
         self.server.send_to_client = AsyncMock()
         self.server._find_client_by_player_id = Mock(return_value='client1')
+        self.world = Mock()
+        self.world.has_line_of_sight = Mock(return_value=True)
+        self.world.is_position_blocked = Mock(return_value=False)
         
     async def test_idle_mob_with_no_players(self):
         """Test mob stays idle when no players nearby"""
@@ -33,7 +36,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         players = {}
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         self.assertEqual(mob.state, 'idle')
         self.assertIsNone(mob.target_player_id)
@@ -52,7 +55,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         self.assertEqual(mob.target_player_id, player.id)
         self.assertEqual(mob.state, 'chasing')
@@ -71,7 +74,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         self.assertEqual(mob.state, 'idle')
         self.assertIsNone(mob.target_player_id)
@@ -91,7 +94,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         self.assertEqual(mob.state, 'idle')
         self.assertIsNone(mob.target_player_id)
@@ -111,7 +114,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         self.assertEqual(mob.state, 'attacking')
         self.assertEqual(mob.target_player_id, player.id)
@@ -131,7 +134,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         current_time = 2.0
         mob.last_attack_time = 0.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         player.take_damage.assert_called_once()
         damage_dealt = player.take_damage.call_args[0][0]
@@ -152,7 +155,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         current_time = 1.0
         mob.last_attack_time = 0.5  # Recently attacked
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Should not attack (cooldown is 1.5s)
         player.take_damage.assert_not_called()
@@ -172,7 +175,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should have moved toward player (positive X direction)
         self.assertGreater(mob.position[0], initial_x)
@@ -192,7 +195,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Calculate distance moved
         dx = mob.position[0] - initial_pos[0]
@@ -226,7 +229,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Should target player2 (closer)
         self.assertEqual(mob.target_player_id, player2.id)
@@ -246,7 +249,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         current_time = 2.0
         mob.last_attack_time = 0.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Deer has 0 damage, so even if it "attacks", no damage dealt
         if player.take_damage.called:
@@ -267,7 +270,7 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Should broadcast MOB_MOVE
         self.server.broadcast.assert_called()
@@ -296,8 +299,8 @@ class TestMobAI(unittest.IsolatedAsyncioTestCase):
         current_time = 1.0
         
         # Tick both mobs
-        await self.manager._tick_mob(mob1, players, self.server, current_time)
-        await self.manager._tick_mob(mob2, players, self.server, current_time)
+        await self.manager._tick_mob(mob1, players, self.world, self.server, current_time)
+        await self.manager._tick_mob(mob2, players, self.world, self.server, current_time)
         
         # Mobs should have separated (collision radius is 1.5)
         final_distance = math.sqrt(

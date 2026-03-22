@@ -219,15 +219,16 @@ Press V to enable orbit camera for debugging world generation and player positio
 - **Extensive item catalog**: 150+ item types (raw materials, processed, tools, food, weapons, armor)
 
 ### Crafting
-- **60+ crafting recipes** spanning:
+- **60+ RPG crafting recipes** spanning:
   - Basic tools (knife, hatchet, shovel, sickle, hammer, fishing rod, shears)
   - Weapons (wooden/stone/iron/gold/diamond swords, pickaxes, axes)
   - Plant processing (fiber→thread→twine→rope→cloth, paper, herbal paste)
   - Animal processing (hide→cured hide→leather, bone needle, glue, tallow, parchment)
   - Stone processing (cut stone, stone brick, ceramic, pottery, mortar)
   - Metal processing (ingots, wire, bands, nails, rivets, chain links, bronze alloy)
-  - Food (roasted meat, jerky, soup, porridge, stew, bread, berry mash, herb tea)
-  - Workstations (campfire, tanning rack, carpentry bench, loom, spinning wheel, mason table, forge, anvil, smelter, alchemy table, enchanting altar, tailor/leatherworker/fletching benches)
+  - Food & consumables (roasted meat, jerky, soup, porridge, stew, bread, berry mash, herb tea)
+- **RPG ingredients model**: Flat recipe list — combine ingredients to produce results, no material-property simulation
+- **Planned**: Skill tier gating (Apprentice/Journeyman/Master), NPC-taught recipes, potions, enchanting
 
 ### Container System
 - **Chests**: Random spawn in world (30% per chunk), loot generation
@@ -300,7 +301,7 @@ Press V to enable orbit camera for debugging world generation and player positio
 2. **Inventory class**: Add/remove/stack items, slot overflow, max stack enforcement, move between slots
 3. **Container class**: Loot generation, item transfer to/from inventory
 4. **World class**: Chunk generation, block get/set, container placement, chunk persistence round-trip
-5. **Crafting system**: Recipe validation, ingredient consumption, tool-as-ingredient (not consumed?), output placement
+5. **Crafting system**: Recipe validation, ingredient consumption, skill tier gating, recipe unlock checks
 6. **Anti-cheat**: Speed validation, reach distance, cooldown enforcement
 
 ### Unit Tests (Client)
@@ -310,13 +311,13 @@ Press V to enable orbit camera for debugging world generation and player positio
 
 ### Integration Tests (Existing — extend)
 10. **Mob combat**: ✅ Already has 10 tests — add armor damage reduction, weapon durability
-11. **Crafting flow**: Gather materials → craft tool → use tool (end-to-end)
+11. **Crafting flow**: Gather ingredients → craft potion/gear → use consumable (end-to-end)
 12. **Multiplayer sync**: Two-player position visibility, item lock sharing, chat delivery
 13. **World persistence**: Save chunks → restart server → reload and verify blocks
 
 ### Missing Test Files
 14. **test_inventory.py**: Stacking, overflow, quickbar selection
-15. **test_crafting.py**: All recipe paths, edge cases (missing ingredients, full inventory)
+15. **test_crafting.py**: All recipe paths, edge cases (missing ingredients, full inventory, tier requirements, NPC-taught recipes)
 16. **test_world.py**: Chunk generation determinism, block read/write, container lifecycle
 17. **test_player.py**: Leveling, equipment, death/respawn state
 18. **test_auth.py**: Register, login, session expiry, duplicate username
@@ -340,19 +341,19 @@ Press V to enable orbit camera for debugging world generation and player positio
 10. **Rate limiting**: Prevent WebSocket message flooding
 
 ### Phase 3 — Gameplay Polish
-11. **Workstation crafting**: Require proximity to workstation blocks for advanced recipes
-12. **Tool durability**: Implement wear/break mechanics for tools and weapons
-13. **Food consumption**: Hunger system with food healing/buffs
-14. **NPC dialogue**: Implement actual dialogue trees and quest progression
+11. **Crafting skill tiers**: Gate recipes behind Apprentice / Journeyman / Master crafting levels, earned via XP from crafting
+12. **RPG recipe expansion**: Add potions (health, mana, buff), scrolls, enchanted gear, and gemstone socketing recipes
+13. **Food as consumable buffs**: Food items grant temporary HP regen, speed boost, or damage boost — no hunger bar
+14. **NPC recipe vendors & quest rewards**: NPCs sell rare ingredients and teach new recipes on quest completion
 15. **Mob behavior refinement**: Passive animals flee, pack behavior for wolves, territorial bears
 16. **Day/night cycle**: Lighting changes, mob spawn rate variation
 
-### Phase 4 — Design Document Systems (per mmo_game_systems_design_document.md)
-17. **MaterialDefinition/MaterialInstance**: Replace static item IDs with property-based materials
-18. **FormDefinition/FormInstance**: Separate substance from shape
-19. **Assembly system**: Multi-part structures with joints, repair, degradation
-20. **Bond/Fellowship system**: Social contracts, mutual aid, offices
-21. **Sovereignty system**: Territorial claims, recognition, communal response
+### Phase 4 — Advanced RPG Systems
+17. **Enchanting system**: Apply enchantments to gear via recipes using rare mob drops and gems
+18. **Alchemy system**: Combine herbs and monster parts into potions with tiered effects
+19. **NPC shop economy**: Buy/sell items with regional price variation and rare stock rotation
+20. **Quest-chain recipe unlocks**: Multi-step quest lines that unlock advanced recipe tiers
+21. **Guild crafting bonuses**: Fellowship/party buffs to crafting success rate or yield
 
 ---
 

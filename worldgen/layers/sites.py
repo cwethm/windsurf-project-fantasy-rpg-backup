@@ -93,6 +93,29 @@ class SiteGenerationLayer:
     
     def _determine_site_for_chunk(self, context: ChunkContext) -> SiteRecord:
         """Determine if a site should be placed in this chunk."""
+        # Guarantee a starter settlement at origin for predictable new-player spawn.
+        if context.chunk_x == 0 and context.chunk_z == 0:
+            site_type = SiteType.VILLAGE
+            return SiteRecord(
+                site_id=f"{site_type.value}_starter_0_0",
+                site_type=site_type,
+                world_seed=context.world_seed,
+                x=8,
+                y=0,
+                z=8,
+                region_x=context.region_x,
+                region_z=context.region_z,
+                faction=self._determine_faction(site_type, context),
+                prosperity=0.7,
+                security=0.7,
+                population_estimate=120,
+                economy_tags=self._generate_economy_tags(site_type),
+                trade_links=[],
+                pressures=[],
+                population_roles=self._generate_population_roles(site_type),
+                radius=30,
+            )
+
         # Use region-level site data
         region_key = (context.region_x, context.region_z)
         

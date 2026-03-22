@@ -58,7 +58,18 @@ const BLOCK_TYPES = {
   ENCHANTING_ALTAR: 80,
   TAILOR_BENCH: 81,
   LEATHERWORKER_BENCH: 82,
-  FLETCHING_BENCH: 83
+  FLETCHING_BENCH: 83,
+  // Structural blocks
+  WOODEN_DOOR: 90,
+  IRON_DOOR: 91,
+  FENCE: 92,
+  FENCE_GATE: 93,
+  LADDER: 94,
+  WOODEN_STAIRS: 95,
+  STONE_STAIRS: 96,
+  TRAPDOOR: 97,
+  WINDOW: 98,
+  IRON_BARS: 99
 };
 
 const BLOCK_NAMES = Object.fromEntries(Object.entries(BLOCK_TYPES).map(([k, v]) => [v, k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())]));
@@ -113,6 +124,17 @@ const TERRAIN_COLORS = {
   [BLOCK_TYPES.TAILOR_BENCH]:[70,  50,  40],
   [BLOCK_TYPES.LEATHERWORKER_BENCH]:[60,  40,  30],
   [BLOCK_TYPES.FLETCHING_BENCH]:[80,  60,  40],
+  // Structural blocks
+  [BLOCK_TYPES.WOODEN_DOOR]:  [160, 120,  70],
+  [BLOCK_TYPES.IRON_DOOR]:    [170, 170, 175],
+  [BLOCK_TYPES.FENCE]:        [150, 110,  60],
+  [BLOCK_TYPES.FENCE_GATE]:   [145, 105,  55],
+  [BLOCK_TYPES.LADDER]:       [170, 130,  70],
+  [BLOCK_TYPES.WOODEN_STAIRS]:[180, 140,  80],
+  [BLOCK_TYPES.STONE_STAIRS]: [115, 115, 115],
+  [BLOCK_TYPES.TRAPDOOR]:     [140, 100,  55],
+  [BLOCK_TYPES.WINDOW]:       [190, 220, 240],
+  [BLOCK_TYPES.IRON_BARS]:    [160, 160, 165],
 };
 
 const ITEM_TYPES = {
@@ -335,6 +357,17 @@ const ITEM_NAMES = {
   81: 'Tailor Bench',
   82: 'Leatherworker Bench',
   83: 'Fletching Bench',
+  // Structural blocks
+  90: 'Wooden Door',
+  91: 'Iron Door',
+  92: 'Fence',
+  93: 'Fence Gate',
+  94: 'Ladder',
+  95: 'Wooden Stairs',
+  96: 'Stone Stairs',
+  97: 'Trapdoor',
+  98: 'Window',
+  99: 'Iron Bars',
   // Crafted items
   300: 'Stick',
   301: 'Coal',
@@ -510,6 +543,17 @@ const ITEM_NAMES = {
 };
 
 const ITEM_COLORS = {
+  // Structural blocks
+  90: '#A0783C',  // Wooden Door - warm wood
+  91: '#AAAAAF',  // Iron Door - iron gray
+  92: '#966E3C',  // Fence - fence wood
+  93: '#916939',  // Fence Gate - slightly darker
+  94: '#AA8246',  // Ladder - light wood
+  95: '#B48C50',  // Wooden Stairs - plank color
+  96: '#737373',  // Stone Stairs - stone gray
+  97: '#8C6437',  // Trapdoor - dark wood
+  98: '#BEDCF0',  // Window - glass blue
+  99: '#A0A0A5',  // Iron Bars - iron
   300: '#8B4513', // Stick - brown
   301: '#1C1C1C', // Coal - black
   302: '#B8B8B8', // Iron Ingot - light gray
@@ -608,6 +652,7 @@ const CRAFTING_RECIPES = [
     ]
   },
   {
+    id: 'wooden_pickaxe',
     result: { type: ITEM_TYPES.WOODEN_PICKAXE, count: 1 },
     ingredients: [
       { type: ITEM_TYPES.SHAPED_PLANKS, count: 3 },
@@ -620,6 +665,7 @@ const CRAFTING_RECIPES = [
     ]
   },
   {
+    id: 'stone_pickaxe',
     result: { type: ITEM_TYPES.STONE_PICKAXE, count: 1 },
     ingredients: [
       { type: BLOCK_TYPES.COBBLESTONE, count: 3 },
@@ -632,6 +678,7 @@ const CRAFTING_RECIPES = [
     ]
   },
   {
+    id: 'iron_pickaxe',
     result: { type: ITEM_TYPES.IRON_PICKAXE, count: 1 },
     ingredients: [
       { type: ITEM_TYPES.IRON_INGOT, count: 3 },
@@ -644,6 +691,7 @@ const CRAFTING_RECIPES = [
     ]
   },
   {
+    id: 'diamond_pickaxe',
     result: { type: ITEM_TYPES.DIAMOND_PICKAXE, count: 1 },
     ingredients: [
       { type: ITEM_TYPES.DIAMOND, count: 3 },
@@ -717,6 +765,7 @@ const CRAFTING_RECIPES = [
     ]
   },
   {
+    id: 'chest',
     result: { type: BLOCK_TYPES.CHEST, count: 1 },
     ingredients: [
       { type: ITEM_TYPES.SHAPED_PLANKS, count: 8 }
@@ -727,8 +776,83 @@ const CRAFTING_RECIPES = [
       [1, 1, 1]
     ]
   },
+  // Structural blocks
+  {
+    id: 'wooden_door',
+    result: { type: BLOCK_TYPES.WOODEN_DOOR, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 6 }
+    ]
+  },
+  {
+    id: 'iron_door',
+    result: { type: BLOCK_TYPES.IRON_DOOR, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.IRON_INGOT, count: 6 }
+    ]
+  },
+  {
+    id: 'fence',
+    result: { type: BLOCK_TYPES.FENCE, count: 3 },
+    ingredients: [
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 2 },
+      { type: ITEM_TYPES.STICK, count: 4 }
+    ]
+  },
+  {
+    id: 'fence_gate',
+    result: { type: BLOCK_TYPES.FENCE_GATE, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 2 },
+      { type: ITEM_TYPES.STICK, count: 2 }
+    ]
+  },
+  {
+    id: 'ladder',
+    result: { type: BLOCK_TYPES.LADDER, count: 3 },
+    ingredients: [
+      { type: ITEM_TYPES.STICK, count: 7 }
+    ]
+  },
+  {
+    id: 'wooden_stairs',
+    result: { type: BLOCK_TYPES.WOODEN_STAIRS, count: 4 },
+    ingredients: [
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 6 }
+    ]
+  },
+  {
+    id: 'stone_stairs',
+    result: { type: BLOCK_TYPES.STONE_STAIRS, count: 4 },
+    ingredients: [
+      { type: BLOCK_TYPES.COBBLESTONE, count: 6 }
+    ]
+  },
+  {
+    id: 'trapdoor',
+    result: { type: BLOCK_TYPES.TRAPDOOR, count: 2 },
+    ingredients: [
+      { type: ITEM_TYPES.SHAPED_PLANKS, count: 4 }
+    ]
+  },
+  {
+    id: 'window',
+    result: { type: BLOCK_TYPES.WINDOW, count: 2 },
+    ingredients: [
+      { type: BLOCK_TYPES.GLASS, count: 4 },
+      { type: ITEM_TYPES.STICK, count: 4 }
+    ]
+  },
+  {
+    id: 'iron_bars',
+    result: { type: BLOCK_TYPES.IRON_BARS, count: 16 },
+    ingredients: [
+      { type: ITEM_TYPES.IRON_INGOT, count: 6 }
+    ]
+  },
   // Smelting recipes (handled by furnace)
   {
+    id: 'iron_ingot',
     result: { type: ITEM_TYPES.IRON_INGOT, count: 1 },
     ingredients: [
       { type: BLOCK_TYPES.IRON_ORE, count: 1 }
@@ -736,6 +860,7 @@ const CRAFTING_RECIPES = [
     requiresFurnace: true
   },
   {
+    id: 'gold_ingot',
     result: { type: ITEM_TYPES.GOLD_INGOT, count: 1 },
     ingredients: [
       { type: BLOCK_TYPES.GOLD_ORE, count: 1 }
@@ -743,6 +868,7 @@ const CRAFTING_RECIPES = [
     requiresFurnace: true
   },
   {
+    id: 'coal',
     result: { type: ITEM_TYPES.COAL, count: 1 },
     ingredients: [
       { type: BLOCK_TYPES.COAL_ORE, count: 1 }
@@ -836,7 +962,9 @@ const MESSAGE_TYPES = {
   QUEST_PROGRESS: 'quest_progress',
   QUEST_COMPLETE: 'quest_complete',
   PLAYER_STATS: 'player_stats',
-  PLAYER_LEVEL_UP: 'player_level_up'
+  PLAYER_LEVEL_UP: 'player_level_up',
+  TOGGLE_DOOR: 'toggle_door',
+  DOOR_STATE: 'door_state'
 };
 
 const CHUNK_SIZE = 16;
@@ -896,6 +1024,9 @@ class VoxelGame {
     this.editMode = false;
     this.mining = null; // { position, startTime, hardness }
     this.mineSound = null;
+    
+    // Door states: "x,y,z" -> bool (true = open)
+    this.doorStates = new Map();
     
     // Item entities
     this.itemEntities = new Map(); // position -> { type, mesh, velocity }
@@ -1121,6 +1252,7 @@ class VoxelGame {
     // Hide auth screen and show game
     document.getElementById('authScreen').style.display = 'none';
     this.canvas.style.display = 'block';
+    document.getElementById('hud').style.display = 'block';
     
     // Initialize game
     this.initGame();
@@ -1135,7 +1267,7 @@ class VoxelGame {
   }
 
   connectToServer() {
-    this.socket = new WebSocket('ws://localhost:3001');
+    this.socket = new WebSocket(`ws://${window.location.hostname}:3001`);
     
     this.socket.onopen = () => {
       console.log('Connected to server');
@@ -1171,9 +1303,10 @@ class VoxelGame {
       this.isAuthenticated = false;
       this.sessionId = null;
       this.userId = null;
-      // Show auth screen again
+      // Show auth screen again, hide game UI
       document.getElementById('authScreen').style.display = 'block';
       this.canvas.style.display = 'none';
+      document.getElementById('hud').style.display = 'none';
     };
   }
 
@@ -1544,6 +1677,17 @@ class VoxelGame {
       return;
     }
 
+    // Door interaction — toggle open/closed
+    // Handles direct door clicks and nearby open-panel hits
+    const doorTarget = this.findDoorAtOrNear(target.position.x, target.position.y, target.position.z);
+    if (doorTarget) {
+      this.socket.send(JSON.stringify({
+        type: MESSAGE_TYPES.TOGGLE_DOOR,
+        data: { x: doorTarget.x, y: doorTarget.y, z: doorTarget.z }
+      }));
+      return;
+    }
+
     // Guard: only place if a block-type item is selected in the quickbar
     const selectedItem = this.inventory.getSelectedItem();
     if (!selectedItem || !BLOCK_NAMES[selectedItem.type]) return;
@@ -1563,6 +1707,27 @@ class VoxelGame {
         }
       }));
     }, 250);
+  }
+
+  findDoorAtOrNear(x, y, z) {
+    const offsets = [
+      [0, 0, 0],
+      [1, 0, 0], [-1, 0, 0],
+      [0, 0, 1], [0, 0, -1],
+      [0, 1, 0], [0, -1, 0]
+    ];
+
+    for (const [dx, dy, dz] of offsets) {
+      const tx = x + dx;
+      const ty = y + dy;
+      const tz = z + dz;
+      const t = this.world.getBlock(tx, ty, tz);
+      if (t === BLOCK_TYPES.WOODEN_DOOR || t === BLOCK_TYPES.IRON_DOOR) {
+        return { x: tx, y: ty, z: tz };
+      }
+    }
+
+    return null;
   }
 
   handleRightClick(event) {
@@ -1692,6 +1857,9 @@ class VoxelGame {
         break;
       case MESSAGE_TYPES.EQUIPMENT_UPDATE:
         this.equipmentPanel.applyUpdate(message.data);
+        break;
+      case MESSAGE_TYPES.DOOR_STATE:
+        this.handleDoorState(message.data);
         break;
     }
   }
@@ -1872,6 +2040,22 @@ class VoxelGame {
     }
   }
 
+  handleDoorState(data) {
+    const { x, y, z, open } = data;
+    const key = `${x},${y},${z}`;
+    
+    if (open) {
+      this.doorStates.set(key, true);
+    } else {
+      this.doorStates.delete(key);
+    }
+    
+    // Rerender the affected chunk
+    const chunkX = Math.floor(x / CHUNK_SIZE);
+    const chunkZ = Math.floor(z / CHUNK_SIZE);
+    this.renderChunk(this.scene, chunkX, chunkZ, this.blockMeshes);
+  }
+
   handleInventoryUpdate(data) {
     this.inventory.updateFromServer(data);
     if (this.questJournal) this.questJournal.updateProgress(data.slots || []);
@@ -1959,7 +2143,7 @@ class VoxelGame {
     if (this.player) {
       this.updatePlayer();
       this.updateCamera();
-      this.physics.update(this.player, this.world);
+      this.physics.update(this.player, this.world, this.doorStates);
       
       // Sync mesh position with player position after physics update
       if (this.player.mesh) {
@@ -3432,6 +3616,16 @@ class VoxelGame {
     structure.position.set(x, y + 1, z);
     this.scene.add(structure);
   }
+
+  isDoorBlock(blockType) {
+    return blockType === BLOCK_TYPES.WOODEN_DOOR || blockType === BLOCK_TYPES.IRON_DOOR;
+  }
+
+  isBlockOccluder(blockType) {
+    if (blockType === BLOCK_TYPES.AIR) return false;
+    if (this.isDoorBlock(blockType)) return false;
+    return true;
+  }
   
   renderChunk(scene, chunkX, chunkZ, blockMeshes) {
     const key = `${chunkX},${chunkZ}`;
@@ -3476,17 +3670,39 @@ class VoxelGame {
           const worldY = y;
           const worldZ = chunkZ * CHUNK_SIZE + z;
           
+          // Special handling for doors - render as thin panels
+          if (blockType === BLOCK_TYPES.WOODEN_DOOR || blockType === BLOCK_TYPES.IRON_DOOR) {
+            // Check if this is the bottom part of a door (door blocks come in pairs)
+            const blockBelow = y > 0 ? this.world.getBlock(worldX, worldY - 1, worldZ) : BLOCK_TYPES.AIR;
+            const isBottomPart = blockBelow !== BLOCK_TYPES.WOODEN_DOOR && blockBelow !== BLOCK_TYPES.IRON_DOOR;
+            
+            if (isBottomPart) {
+              // This is the bottom part - render the full 2-block high door
+              const key = `${worldX},${worldY},${worldZ}`;
+              const isOpen = this.doorStates.has(key);
+
+              this.addDoorGeometry(
+                positions, normals, colors, indices,
+                x * BLOCK_SIZE, y * BLOCK_SIZE, z * BLOCK_SIZE,
+                this.getBlockColor(blockType), vertexCount, isOpen
+              );
+              vertexCount += 24; // 6 faces * 4 vertices
+            }
+            // Skip rendering the top part as it's handled by the bottom part
+            continue;
+          }
+          
           // Check if block is transparent
           const isTransparent = blockType === BLOCK_TYPES.WATER || blockType === BLOCK_TYPES.GLASS;
           
           // Check each face for visibility - check adjacent blocks
           const faces = [
-            { dir: [0, 1, 0], visible: y >= CHUNK_HEIGHT - 1 || this.world.getBlock(worldX, worldY + 1, worldZ) === BLOCK_TYPES.AIR },
-            { dir: [0, -1, 0], visible: y <= 0 || this.world.getBlock(worldX, worldY - 1, worldZ) === BLOCK_TYPES.AIR },
-            { dir: [1, 0, 0], visible: this.world.getBlock(worldX + 1, worldY, worldZ) === BLOCK_TYPES.AIR },
-            { dir: [-1, 0, 0], visible: this.world.getBlock(worldX - 1, worldY, worldZ) === BLOCK_TYPES.AIR },
-            { dir: [0, 0, 1], visible: this.world.getBlock(worldX, worldY, worldZ + 1) === BLOCK_TYPES.AIR },
-            { dir: [0, 0, -1], visible: this.world.getBlock(worldX, worldY, worldZ - 1) === BLOCK_TYPES.AIR }
+            { dir: [0, 1, 0], visible: y >= CHUNK_HEIGHT - 1 || !this.isBlockOccluder(this.world.getBlock(worldX, worldY + 1, worldZ)) },
+            { dir: [0, -1, 0], visible: y <= 0 || !this.isBlockOccluder(this.world.getBlock(worldX, worldY - 1, worldZ)) },
+            { dir: [1, 0, 0], visible: !this.isBlockOccluder(this.world.getBlock(worldX + 1, worldY, worldZ)) },
+            { dir: [-1, 0, 0], visible: !this.isBlockOccluder(this.world.getBlock(worldX - 1, worldY, worldZ)) },
+            { dir: [0, 0, 1], visible: !this.isBlockOccluder(this.world.getBlock(worldX, worldY, worldZ + 1)) },
+            { dir: [0, 0, -1], visible: !this.isBlockOccluder(this.world.getBlock(worldX, worldY, worldZ - 1)) }
           ];
           
           const color = this.getBlockColor(blockType);
@@ -3633,6 +3849,138 @@ class VoxelGame {
     );
   }
   
+  addDoorGeometry(positions, normals, colors, indices, x, y, z, color, vertexCount, isOpen) {
+    const thickness = 0.0625; // 1/16th of a block thickness for door panel
+    
+    if (isOpen) {
+      // Open door - rotated to the side, takes up minimal space
+      // Door opens to the right side (positive X)
+      
+      // Front face (when open, faces +X direction)
+      positions.push(
+        x + 1 - thickness, y, z + 1 - thickness,
+        x + 1, y, z + 1 - thickness,
+        x + 1, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(1, 0, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Back face (when open, faces -X direction)
+      positions.push(
+        x + 1 - thickness, y, z + thickness,
+        x + 1 - thickness, y + 2, z + thickness,
+        x + 1, y + 2, z + thickness,
+        x + 1, y, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(-1, 0, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Top edge
+      positions.push(
+        x + 1 - thickness, y + 2, z + thickness,
+        x + 1, y + 2, z + thickness,
+        x + 1, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, 1, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Bottom edge
+      positions.push(
+        x + 1 - thickness, y, z + 1 - thickness,
+        x + 1, y, z + 1 - thickness,
+        x + 1, y, z + thickness,
+        x + 1 - thickness, y, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, -1, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Outer edge (the side facing away from the wall)
+      positions.push(
+        x + 1, y, z + thickness,
+        x + 1, y + 2, z + thickness,
+        x + 1, y + 2, z + 1 - thickness,
+        x + 1, y, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(1, 0, 0); colors.push(color.r, color.g, color.b); }
+      
+    } else {
+      // Closed door - thin panel filling the doorway
+      
+      // Front face (faces +Z direction)
+      positions.push(
+        x + thickness, y, z + thickness,
+        x + 1 - thickness, y, z + thickness,
+        x + 1 - thickness, y + 2, z + thickness,
+        x + thickness, y + 2, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, 0, 1); colors.push(color.r, color.g, color.b); }
+      
+      // Back face (faces -Z direction)
+      positions.push(
+        x + thickness, y, z + 1 - thickness,
+        x + thickness, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, 0, -1); colors.push(color.r, color.g, color.b); }
+      
+      // Top edge
+      positions.push(
+        x + thickness, y + 2, z + thickness,
+        x + 1 - thickness, y + 2, z + thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness,
+        x + thickness, y + 2, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, 1, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Bottom edge
+      positions.push(
+        x + thickness, y, z + 1 - thickness,
+        x + 1 - thickness, y, z + 1 - thickness,
+        x + 1 - thickness, y, z + thickness,
+        x + thickness, y, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(0, -1, 0); colors.push(color.r, color.g, color.b); }
+      
+      // Left edge (hinge side)
+      positions.push(
+        x + thickness, y, z + 1 - thickness,
+        x + thickness, y + 2, z + 1 - thickness,
+        x + thickness, y + 2, z + thickness,
+        x + thickness, y, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(-1, 0, 0); colors.push(color.r, color.g, color.b); }
+    }
+    
+    if (isOpen) {
+      // Inner edge (hinge side when open)
+      positions.push(
+        x + 1 - thickness, y, z + 1 - thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y + 2, z + thickness,
+        x + 1 - thickness, y, z + thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(-1, 0, 0); colors.push(color.r, color.g, color.b); }
+    } else {
+      // Right edge (non-hinge side when closed)
+      positions.push(
+        x + 1 - thickness, y, z + thickness,
+        x + 1 - thickness, y + 2, z + thickness,
+        x + 1 - thickness, y + 2, z + 1 - thickness,
+        x + 1 - thickness, y, z + 1 - thickness
+      );
+      for (let i = 0; i < 4; i++) { normals.push(1, 0, 0); colors.push(color.r, color.g, color.b); }
+    }
+
+    // Add indices for 6 faces (24 vertices = 6 quads)
+    const baseIndex = vertexCount;
+    for (let face = 0; face < 6; face++) {
+      const faceBase = baseIndex + face * 4;
+      indices.push(
+        faceBase, faceBase + 1, faceBase + 2,
+        faceBase, faceBase + 2, faceBase + 3
+      );
+    }
+  }
+  
   getBlockColor(blockType) {
     switch (blockType) {
       case BLOCK_TYPES.GRASS: return { r: 0.2, g: 0.8, b: 0.2 };
@@ -3657,6 +4005,8 @@ class VoxelGame {
       case BLOCK_TYPES.WOOL: return { r: 0.9, g: 0.9, b: 0.9 }; // White wool
       case BLOCK_TYPES.FURNACE: return { r: 0.3, g: 0.3, b: 0.3 }; // Dark gray
       case BLOCK_TYPES.CRAFTING_TABLE: return { r: 0.5, g: 0.3, b: 0.1 }; // Brown
+      case BLOCK_TYPES.WOODEN_DOOR: return { r: 0.6, g: 0.4, b: 0.2 }; // Wood color
+      case BLOCK_TYPES.IRON_DOOR: return { r: 0.7, g: 0.7, b: 0.8 }; // Iron color
       default: return { r: 1, g: 0, b: 1 }; // Magenta for unknown blocks
     }
   }
@@ -4352,17 +4702,17 @@ class Physics {
     this.gravity = GRAVITY;
   }
 
-  update(player, world) {
+  update(player, world, doorStates = null) {
     const dt = 0.016;
     const playerWidth = 0.6;
     const playerHeight = 1.8;
     const halfW = playerWidth / 2;
     
     // Depenetration: if player is already inside terrain, push them up
-    if (this.collidesAt(player.position, halfW, playerHeight, world)) {
+    if (this.collidesAt(player.position, halfW, playerHeight, world, doorStates)) {
       for (let i = 0; i < 100; i++) {
         player.position.y += 0.1;
-        if (!this.collidesAt(player.position, halfW, playerHeight, world)) break;
+        if (!this.collidesAt(player.position, halfW, playerHeight, world, doorStates)) break;
       }
       player.velocity.y = 0;
       player.onGround = true;
@@ -4375,7 +4725,7 @@ class Physics {
     
     // --- Y axis (gravity/jumping) ---
     player.position.y += player.velocity.y * dt;
-    const groundY = this.findGround(player.position, halfW, world);
+    const groundY = this.findGround(player.position, halfW, world, doorStates);
     if (groundY !== null && player.position.y <= groundY) {
       player.position.y = groundY;
       player.velocity.y = 0;
@@ -4386,14 +4736,14 @@ class Physics {
     
     // --- X axis ---
     player.position.x += player.velocity.x * dt;
-    if (this.collidesAt(player.position, halfW, playerHeight, world)) {
+    if (this.collidesAt(player.position, halfW, playerHeight, world, doorStates)) {
       player.position.x -= player.velocity.x * dt;
       player.velocity.x = 0;
     }
     
     // --- Z axis ---
     player.position.z += player.velocity.z * dt;
-    if (this.collidesAt(player.position, halfW, playerHeight, world)) {
+    if (this.collidesAt(player.position, halfW, playerHeight, world, doorStates)) {
       player.position.z -= player.velocity.z * dt;
       player.velocity.z = 0;
     }
@@ -4405,7 +4755,7 @@ class Physics {
     }
   }
 
-  findGround(position, halfW, world) {
+  findGround(position, halfW, world, doorStates = null) {
     // Scan downward from player feet to find the highest solid block below
     const feetY = position.y;
     const startY = Math.floor(feetY);
@@ -4413,7 +4763,8 @@ class Physics {
     for (let checkY = startY; checkY >= startY - 3 && checkY >= 0; checkY--) {
       for (let bx = Math.floor(position.x - halfW); bx <= Math.floor(position.x + halfW); bx++) {
         for (let bz = Math.floor(position.z - halfW); bz <= Math.floor(position.z + halfW); bz++) {
-          if (world.getBlock(bx, checkY, bz) !== BLOCK_TYPES.AIR) {
+          const blockType = world.getBlock(bx, checkY, bz);
+          if (this.isBlockingBlock(blockType, bx, checkY, bz, world, doorStates)) {
             return checkY + 1; // Top of solid block
           }
         }
@@ -4422,7 +4773,7 @@ class Physics {
     return null;
   }
 
-  collidesAt(position, halfW, playerHeight, world) {
+  collidesAt(position, halfW, playerHeight, world, doorStates = null) {
     // Check if the player bounding box overlaps any solid block
     const minX = Math.floor(position.x - halfW);
     const maxX = Math.floor(position.x + halfW);
@@ -4434,13 +4785,31 @@ class Physics {
     for (let bx = minX; bx <= maxX; bx++) {
       for (let by = minY; by <= maxY; by++) {
         for (let bz = minZ; bz <= maxZ; bz++) {
-          if (world.getBlock(bx, by, bz) !== BLOCK_TYPES.AIR) {
+          const blockType = world.getBlock(bx, by, bz);
+          if (this.isBlockingBlock(blockType, bx, by, bz, world, doorStates)) {
             return true;
           }
         }
       }
     }
     return false;
+  }
+
+  isBlockingBlock(blockType, bx, by, bz, world, doorStates) {
+    if (blockType === BLOCK_TYPES.AIR) return false;
+
+    if (blockType === BLOCK_TYPES.WOODEN_DOOR || blockType === BLOCK_TYPES.IRON_DOOR) {
+      const belowType = world.getBlock(bx, by - 1, bz);
+      const bottomY = (belowType === BLOCK_TYPES.WOODEN_DOOR || belowType === BLOCK_TYPES.IRON_DOOR)
+        ? by - 1
+        : by;
+      const doorKey = `${bx},${bottomY},${bz}`;
+      if (doorStates && doorStates.has(doorKey)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
 
@@ -4703,7 +5072,10 @@ class Inventory {
     console.log('Inventory panel element:', panel);
     if (panel) {
       panel.classList.toggle('open', this.panelOpen);
-      if (this.panelOpen) this.renderPanel();
+      if (this.panelOpen) {
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.renderPanel();
+      }
     } else {
       console.error('Inventory panel element not found!');
     }
@@ -4730,6 +5102,7 @@ class Inventory {
     this.containerData = data;
     this.containerOpen = true;
     this.panelOpen = false;
+    if (document.pointerLockElement) document.exitPointerLock();
     document.getElementById('inventoryPanel').classList.remove('open');
     document.getElementById('containerPanel').classList.add('open');
     this.renderContainer();
@@ -4946,6 +5319,7 @@ class Crafting {
     const panel = document.getElementById('craftingPanel');
     
     if (this.panelOpen) {
+      if (document.pointerLockElement) document.exitPointerLock();
       panel.classList.add('open');
       this.renderRecipeList();
     } else {
@@ -5799,6 +6173,9 @@ class EquipmentPanel {
   toggle() {
     if (!this.panelEl) return;
     this.panelEl.classList.toggle('open');
+    if (this.panelEl.classList.contains('open') && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
   }
 
   close() {

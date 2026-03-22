@@ -79,6 +79,20 @@ CRAFTING_RECIPES = {
         ],
         'result': {'type': ITEM_TYPES['IRON_SWORD'], 'count': 1}
     },
+    'diamond_pickaxe': {
+        'ingredients': [
+            {'type': ITEM_TYPES['DIAMOND'], 'count': 3},
+            {'type': ITEM_TYPES['STICK'], 'count': 2}
+        ],
+        'result': {'type': ITEM_TYPES['DIAMOND_PICKAXE'], 'count': 1}
+    },
+    'diamond_sword': {
+        'ingredients': [
+            {'type': ITEM_TYPES['DIAMOND'], 'count': 2},
+            {'type': ITEM_TYPES['STICK'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['DIAMOND_SWORD'], 'count': 1}
+    },
     'sticks': {
         'ingredients': [
             {'type': ITEM_TYPES['WOOD'], 'count': 2}
@@ -120,6 +134,89 @@ CRAFTING_RECIPES = {
             {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 8}
         ],
         'result': {'type': ITEM_TYPES['CHEST'], 'count': 1}
+    },
+    # Structural blocks
+    'wooden_door': {
+        'ingredients': [
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 6}
+        ],
+        'result': {'type': ITEM_TYPES['WOODEN_DOOR'], 'count': 1}
+    },
+    'iron_door': {
+        'ingredients': [
+            {'type': ITEM_TYPES['IRON_INGOT'], 'count': 6}
+        ],
+        'result': {'type': ITEM_TYPES['IRON_DOOR'], 'count': 1}
+    },
+    'fence': {
+        'ingredients': [
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 2},
+            {'type': ITEM_TYPES['STICK'], 'count': 4}
+        ],
+        'result': {'type': ITEM_TYPES['FENCE'], 'count': 3}
+    },
+    'fence_gate': {
+        'ingredients': [
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 2},
+            {'type': ITEM_TYPES['STICK'], 'count': 2}
+        ],
+        'result': {'type': ITEM_TYPES['FENCE_GATE'], 'count': 1}
+    },
+    'ladder': {
+        'ingredients': [
+            {'type': ITEM_TYPES['STICK'], 'count': 7}
+        ],
+        'result': {'type': ITEM_TYPES['LADDER'], 'count': 3}
+    },
+    'wooden_stairs': {
+        'ingredients': [
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 6}
+        ],
+        'result': {'type': ITEM_TYPES['WOODEN_STAIRS'], 'count': 4}
+    },
+    'stone_stairs': {
+        'ingredients': [
+            {'type': ITEM_TYPES['COBBLESTONE'], 'count': 6}
+        ],
+        'result': {'type': ITEM_TYPES['STONE_STAIRS'], 'count': 4}
+    },
+    'trapdoor': {
+        'ingredients': [
+            {'type': ITEM_TYPES['SHAPED_PLANKS'], 'count': 4}
+        ],
+        'result': {'type': ITEM_TYPES['TRAPDOOR'], 'count': 2}
+    },
+    'window': {
+        'ingredients': [
+            {'type': ITEM_TYPES['GLASS'], 'count': 4},
+            {'type': ITEM_TYPES['STICK'], 'count': 4}
+        ],
+        'result': {'type': ITEM_TYPES['WINDOW'], 'count': 2}
+    },
+    'iron_bars': {
+        'ingredients': [
+            {'type': ITEM_TYPES['IRON_INGOT'], 'count': 6}
+        ],
+        'result': {'type': ITEM_TYPES['IRON_BARS'], 'count': 16}
+    },
+    # Smelting recipes
+    'iron_ingot': {
+        'ingredients': [
+            {'type': ITEM_TYPES['IRON_ORE'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['IRON_INGOT'], 'count': 1}
+    },
+    'gold_ingot': {
+        'ingredients': [
+            {'type': ITEM_TYPES['GOLD_ORE'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['GOLD_INGOT'], 'count': 1}
+    },
+    'coal': {
+        'ingredients': [
+            {'type': ITEM_TYPES['COAL_ORE'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['COAL'], 'count': 1}
     },
     # Basic tools
     'knife': {
@@ -554,6 +651,17 @@ BLOCK_HARDNESS = {
     BLOCK_TYPES['LEAVES']: 0.3,
     BLOCK_TYPES['SAND']: 0.5,
     BLOCK_TYPES['CHEST']: 2.5,
+    # Structural blocks
+    BLOCK_TYPES['WOODEN_DOOR']: 1.5,
+    BLOCK_TYPES['IRON_DOOR']: 5.0,
+    BLOCK_TYPES['FENCE']: 1.0,
+    BLOCK_TYPES['FENCE_GATE']: 1.0,
+    BLOCK_TYPES['LADDER']: 0.8,
+    BLOCK_TYPES['WOODEN_STAIRS']: 1.5,
+    BLOCK_TYPES['STONE_STAIRS']: 3.0,
+    BLOCK_TYPES['TRAPDOOR']: 1.5,
+    BLOCK_TYPES['WINDOW']: 0.5,
+    BLOCK_TYPES['IRON_BARS']: 5.0,
 }
 
 # Block to item mapping
@@ -610,6 +718,17 @@ BLOCK_DROPS = {
     BLOCK_TYPES['TAILOR_BENCH']: ITEM_TYPES['TAILOR_BENCH'],
     BLOCK_TYPES['LEATHERWORKER_BENCH']: ITEM_TYPES['LEATHERWORKER_BENCH'],
     BLOCK_TYPES['FLETCHING_BENCH']: ITEM_TYPES['FLETCHING_BENCH'],
+    # Structural blocks drop themselves
+    BLOCK_TYPES['WOODEN_DOOR']: ITEM_TYPES['WOODEN_DOOR'],
+    BLOCK_TYPES['IRON_DOOR']: ITEM_TYPES['IRON_DOOR'],
+    BLOCK_TYPES['FENCE']: ITEM_TYPES['FENCE'],
+    BLOCK_TYPES['FENCE_GATE']: ITEM_TYPES['FENCE_GATE'],
+    BLOCK_TYPES['LADDER']: ITEM_TYPES['LADDER'],
+    BLOCK_TYPES['WOODEN_STAIRS']: ITEM_TYPES['WOODEN_STAIRS'],
+    BLOCK_TYPES['STONE_STAIRS']: ITEM_TYPES['STONE_STAIRS'],
+    BLOCK_TYPES['TRAPDOOR']: ITEM_TYPES['TRAPDOOR'],
+    BLOCK_TYPES['WINDOW']: ITEM_TYPES['WINDOW'],
+    BLOCK_TYPES['IRON_BARS']: ITEM_TYPES['IRON_BARS'],
 }
 
 # Mob stats table
@@ -1075,6 +1194,58 @@ class World:
         self.dirty_chunks.add(chunk_key)
         return True
     
+    def is_solid(self, x: int, y: int, z: int, door_states: Optional[Dict[Tuple[int, int, int], bool]] = None) -> bool:
+        """Return True if the block at (x,y,z) is solid. Open doors are non-solid."""
+        block_type = self.get_block(x, y, z)
+        if block_type == BLOCK_TYPES['AIR']:
+            return False
+
+        if block_type in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']) and door_states is not None:
+            block_below = self.get_block(x, y - 1, z) if y > 0 else BLOCK_TYPES['AIR']
+            bottom_y = y - 1 if block_below in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']) else y
+            if door_states.get((x, bottom_y, z), False):
+                return False
+
+        return True
+
+    def has_line_of_sight(self, x0: float, y0: float, z0: float,
+                          x1: float, y1: float, z1: float,
+                          door_states: Optional[Dict[Tuple[int, int, int], bool]] = None) -> bool:
+        """Check if there is a clear line between two points (no solid blocks).
+        Uses simple step-based raycast through the block grid."""
+        dx = x1 - x0
+        dy = y1 - y0
+        dz = z1 - z0
+        dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+        if dist < 0.1:
+            return True
+
+        # Step size ~0.5 blocks for reasonable accuracy
+        steps = max(int(dist * 2), 1)
+        sx = dx / steps
+        sy = dy / steps
+        sz = dz / steps
+
+        cx, cy, cz = x0, y0, z0
+        for _ in range(steps):
+            cx += sx
+            cy += sy
+            cz += sz
+            bx, by, bz = int(math.floor(cx)), int(math.floor(cy)), int(math.floor(cz))
+            if self.is_solid(bx, by, bz, door_states):
+                return False
+        return True
+
+    def is_position_blocked(self, x: float, y: float, z: float,
+                            door_states: Optional[Dict[Tuple[int, int, int], bool]] = None) -> bool:
+        """Check if a mob-sized entity would collide with solid blocks at position.
+        Checks the block at feet level and head level (1 block tall mob)."""
+        bx = int(math.floor(x))
+        by_feet = int(math.floor(y))
+        by_head = int(math.floor(y + 0.9))
+        bz = int(math.floor(z))
+        return self.is_solid(bx, by_feet, bz, door_states) or self.is_solid(bx, by_head, bz, door_states)
+
     def spawn_item_entity(self, x: float, y: float, z: float, item_type: int, harvester_id: str = None, count: int = 1):
         """Register an item entity with timestamp"""
         key = f"{int(x)},{int(y)},{int(z)}"
@@ -1126,6 +1297,9 @@ class VoxelServer:
         
         # Rate limiting: per-client message counters
         self.client_msg_counts: Dict[str, List] = {}  # client_id -> [count, window_start, warnings]
+        
+        # Door states: (x,y,z) -> bool (True = open)
+        self.door_states: Dict[Tuple[int,int,int], bool] = {}
         
         # NPC and quest system
         self.npcs: Dict[str, NPC] = {}
@@ -1270,13 +1444,21 @@ class VoxelServer:
         if client_id in self.players:
             player = self.players[client_id]
             
-            # Save player data
+            # Get persistent user_id for saving
+            websocket = self.clients.get(client_id)
+            user_id = getattr(websocket, 'user_id', None) if websocket else None
+            
+            # Save player data with persistent user_id
             self.db.save_player(
                 client_id,
                 player.username,
                 {'x': player.position[0], 'y': player.position[1], 'z': player.position[2]},
                 player.inventory.to_dict(),
-                player.health
+                player.health,
+                user_id=user_id,
+                level=player.level,
+                experience=player.experience,
+                equipment={'weapon': player.equipped_weapon, 'armor': player.equipped_armor}
             )
             
             # Notify other players (avoid recursion)
@@ -1284,7 +1466,7 @@ class VoxelServer:
                 'type': MESSAGE_TYPES['PLAYER_LEAVE'],
                 'data': {'playerId': client_id}
             })
-            for cid, websocket in self.clients.items():
+            for cid, websocket in list(self.clients.items()):
                 if cid != client_id:
                     try:
                         await websocket.send(message)
@@ -1344,8 +1526,9 @@ class VoxelServer:
             })
             return False
         
-        # Store session with client
+        # Store session and user_id with client
         self.clients[client_id].session_id = session_id
+        self.clients[client_id].user_id = user_id
         
         await self.send_to_client(client_id, 'auth_success', {
             'session_id': session_id,
@@ -1384,8 +1567,9 @@ class VoxelServer:
             })
             return False
         
-        # Store session with client
+        # Store session and user_id with client
         self.clients[client_id].session_id = session_id
+        self.clients[client_id].user_id = user['id']
         
         await self.send_to_client(client_id, 'auth_success', {
             'session_id': session_id,
@@ -1518,6 +1702,8 @@ class VoxelServer:
             await self.handle_drop_item(client_id, data)
         elif message_type == MESSAGE_TYPES['CRAFT_ITEM']:
             await self.handle_craft_item(client_id, data)
+        elif message_type == MESSAGE_TYPES['TOGGLE_DOOR']:
+            await self.handle_toggle_door(client_id, data)
     
     async def handle_collect_item(self, client_id: str, data: Dict[str, Any]):
         """Handle collecting an item entity"""
@@ -1560,6 +1746,50 @@ class VoxelServer:
                 'y': position['y'],
                 'z': position['z']
             })
+    
+    async def handle_toggle_door(self, client_id: str, data: Dict[str, Any]):
+        """Handle toggling a door open/closed"""
+        logger.info(f"Received TOGGLE_DOOR from {client_id}: {data}")
+        player = self.players.get(client_id)
+        if not player:
+            logger.warning(f"No player found for client_id: {client_id}")
+            return
+        
+        x, y, z = int(data.get('x', 0)), int(data.get('y', 0)), int(data.get('z', 0))
+        
+        # Check reach distance
+        dx = x - player.position[0]
+        dy = y - player.position[1]
+        dz = z - player.position[2]
+        dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+        if dist > MAX_REACH_DISTANCE:
+            logger.warning(f"Door at ({x},{y},{z}) too far from player {player.username}: distance {dist}")
+            return
+        
+        # Check if there's actually a door block there
+        block_type = self.world.get_block(x, y, z)
+        logger.info(f"Block type at ({x},{y},{z}): {block_type}")
+        if block_type not in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+            logger.warning(f"Block at ({x},{y},{z}) is not a door: {block_type}")
+            return
+        
+        # Normalize to door bottom block so clicking top-half still toggles same state key
+        block_below = self.world.get_block(x, y - 1, z) if y > 0 else BLOCK_TYPES['AIR']
+        if block_below in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+            y = y - 1
+
+        # Toggle state
+        key = (x, y, z)
+        is_open = not self.door_states.get(key, False)
+        self.door_states[key] = is_open
+        
+        logger.info(f"Door at ({x},{y},{z}) {'opened' if is_open else 'closed'} by {player.username}")
+        
+        # Broadcast to all players
+        logger.info(f"Broadcasting DOOR_STATE: x={x}, y={y}, z={z}, open={is_open}")
+        await self.broadcast(MESSAGE_TYPES['DOOR_STATE'], {
+            'x': x, 'y': y, 'z': z, 'open': is_open
+        })
     
     async def handle_toggle_item_lock(self, client_id: str, data: Dict[str, Any]):
         """Toggle item lock for player"""
@@ -1641,84 +1871,20 @@ class VoxelServer:
         await self.send_to_client(client_id, MESSAGE_TYPES['INVENTORY_UPDATE'],
             player.inventory.to_dict())
     
-    async def handle_craft_item(self, client_id: str, data: Dict[str, Any]):
-        """Handle crafting requests"""
-        player = self.players.get(client_id)
-        if not player:
-            return
-        
-        recipe_id = data.get('recipe')
-        if not recipe_id or recipe_id not in CRAFTING_RECIPES:
-            return
-        
-        recipe = CRAFTING_RECIPES[recipe_id]
-        
-        # Check if player has all required ingredients
-        can_craft = True
-        for ingredient in recipe['ingredients']:
-            item_type = ingredient['type']
-            required_count = ingredient['count']
-            
-            # Count items in inventory
-            available_count = 0
-            for slot in player.inventory.slots:
-                if slot and slot['type'] == item_type:
-                    available_count += slot['count']
-            
-            if available_count < required_count:
-                can_craft = False
-                break
-        
-        if not can_craft:
-            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
-                'message': 'Not enough materials to craft this item!'
-            })
-            return
-        
-        # Remove ingredients from inventory
-        for ingredient in recipe['ingredients']:
-            item_type = ingredient['type']
-            required_count = ingredient['count']
-            
-            remaining = required_count
-            for slot in player.inventory.slots:
-                if slot and slot['type'] == item_type and remaining > 0:
-                    remove_count = min(slot['count'], remaining)
-                    slot['count'] -= remove_count
-                    remaining -= remove_count
-                    
-                    if slot['count'] <= 0:
-                        slot['type'] = None
-                        slot['count'] = 0
-                        slot = None
-        
-        # Add crafted items to inventory
-        result_type = recipe['result']['type']
-        result_count = recipe['result']['count']
-        remaining = result_count
-        
-        while remaining > 0:
-            added = player.inventory.add_item(result_type, remaining)
-            remaining -= (result_count - added)
-        
-        # Update inventory
-        await self.send_to_client(client_id, MESSAGE_TYPES['INVENTORY_UPDATE'],
-            player.inventory.to_dict())
-        
-        # Send success message
-        item_name = ITEM_NAMES.get(result_type, f'Item {result_type}')
-        await self.send_to_client(client_id, MESSAGE_TYPES['CRAFT_ITEM'], {
-            'success': True,
-            'itemName': item_name,
-            'count': result_count
-        })
-    
     async def handle_join(self, client_id: str, data: Dict[str, Any]):
         """Handle player joining"""
         username = data.get('username', f'Player_{client_id[:8]}')
         
-        # Try to load existing player data
-        player_data = self.db.load_player(client_id)
+        # Get user_id from authenticated session for persistent player data
+        websocket = self.clients.get(client_id)
+        user_id = getattr(websocket, 'user_id', None) if websocket else None
+        
+        # Try to load existing player data by persistent user_id
+        player_data = None
+        if user_id:
+            player_data = self.db.load_player_by_user_id(user_id)
+        if not player_data:
+            player_data = self.db.load_player(client_id)
         
         if player_data:
             # Load existing player
@@ -1729,26 +1895,39 @@ class VoxelServer:
                 float(player_data['position']['z'])
             ]
             player.health = player_data['health']
-            # Load inventory
-            for item in player_data['inventory']:
-                player.inventory.add_item(item['type'], item['count'])
-            logger.info(f"Loaded existing player {username} at {player.position}")
+            player.level = player_data.get('level', 1)
+            player.experience = player_data.get('experience', 0)
+            # Restore equipment
+            eq_data = player_data.get('equipment', {})
+            if eq_data:
+                player.equipped_weapon = eq_data.get('weapon')
+                armor = eq_data.get('armor', {})
+                if armor and isinstance(armor, dict):
+                    for slot in ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'amulet']:
+                        if armor.get(slot):
+                            player.equipped_armor[slot] = armor[slot]
+            # Sync anti-cheat tracking to loaded position
+            player.last_position = player.position.copy()
+            # Load inventory — handle both formats:
+            # New format: {'slots': [...], 'selectedSlot': N}
+            # Legacy format: [{'type': T, 'count': C}, ...]
+            inv_data = player_data['inventory']
+            if isinstance(inv_data, dict) and 'slots' in inv_data:
+                for i, slot in enumerate(inv_data['slots']):
+                    if slot and i < len(player.inventory.slots):
+                        player.inventory.slots[i] = slot
+                if 'selectedSlot' in inv_data:
+                    player.inventory.selected_slot = inv_data['selectedSlot']
+            else:
+                for item in inv_data:
+                    if item and isinstance(item, dict):
+                        player.inventory.add_item(item['type'], item['count'])
+            logger.info(f"Loaded existing player {username} at {player.position} (level {player.level}, {player.experience} xp)")
         else:
             # Create new player
             player = Player(username, client_id)
-            
-            # Find a good spawn position above ground
-            spawn_x = 0
-            spawn_z = 0
-            spawn_y = 100  # Start high
-            
-            # Find ground level at spawn position
-            for y in range(100, 0, -1):
-                if self.world.get_block(spawn_x, y, spawn_z) != BLOCK_TYPES['AIR']:
-                    spawn_y = y + 2  # Spawn 2 blocks above ground
-                    break
-            
-            player.position = [float(spawn_x), float(spawn_y), float(spawn_z)]
+
+            player.position = self.get_spawn_position()
             
             # Give starter items
             player.inventory.add_item(ITEM_TYPES['WOODEN_PICKAXE'], 1)
@@ -1805,6 +1984,13 @@ class VoxelServer:
             'equipped_weapon': player.equipped_weapon,
             'equipped_armor': player.equipped_armor
         })
+        
+        # Send existing door states to new player
+        for (dx, dy, dz), is_open in self.door_states.items():
+            if is_open:
+                await self.send_to_client(client_id, MESSAGE_TYPES['DOOR_STATE'], {
+                    'x': dx, 'y': dy, 'z': dz, 'open': True
+                })
         
         # Notify other players
         await self.broadcast(MESSAGE_TYPES['PLAYER_JOIN'], {
@@ -1952,6 +2138,26 @@ class VoxelServer:
         success = self.world.set_block(x, y, z, block_type)
         
         if success:
+            # Special handling for doors - place both blocks
+            if block_type in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+                # Place the top block if there's space
+                if y < CHUNK_HEIGHT - 1:
+                    top_block_type = self.world.get_block(x, y + 1, z)
+                    if top_block_type == BLOCK_TYPES['AIR']:
+                        self.world.set_block(x, y + 1, z, block_type)
+                        # Broadcast the top block placement
+                        await self.broadcast(MESSAGE_TYPES['WORLD_UPDATE'], {
+                            'action': 'place',
+                            'position': {'x': x, 'y': y + 1, 'z': z},
+                            'blockType': block_type
+                        })
+            
+            # Create a container object when placing a chest
+            if block_type == BLOCK_TYPES['CHEST']:
+                container_key = f"{x},{y},{z}"
+                self.world.containers[container_key] = Container(x, y, z)
+                logger.info(f"Created container at ({x},{y},{z})")
+            
             await self.broadcast(MESSAGE_TYPES['WORLD_UPDATE'], {
                 'action': 'place',
                 'position': position,
@@ -1991,6 +2197,42 @@ class VoxelServer:
         success = self.world.set_block(x, y, z, BLOCK_TYPES['AIR'])
         
         if success and block_type != BLOCK_TYPES['AIR']:
+            # Special handling for doors - remove both blocks and door state
+            if block_type in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+                # Remove door state
+                door_key = (x, y, z)
+                if door_key in self.door_states:
+                    del self.door_states[door_key]
+                
+                # Check if this is the bottom part and remove the top part too
+                block_below = self.world.get_block(x, y - 1, z) if y > 0 else BLOCK_TYPES['AIR']
+                block_above = self.world.get_block(x, y + 1, z) if y < CHUNK_HEIGHT - 1 else BLOCK_TYPES['AIR']
+                
+                if block_below in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+                    # This is the top part, remove the bottom part's state
+                    bottom_key = (x, y - 1, z)
+                    if bottom_key in self.door_states:
+                        del self.door_states[bottom_key]
+                elif block_above in (BLOCK_TYPES['WOODEN_DOOR'], BLOCK_TYPES['IRON_DOOR']):
+                    # This is the bottom part, remove the top block and its state
+                    self.world.set_block(x, y + 1, z, BLOCK_TYPES['AIR'])
+                    top_key = (x, y + 1, z)
+                    if top_key in self.door_states:
+                        del self.door_states[top_key]
+                    # Broadcast the top block removal
+                    await self.broadcast(MESSAGE_TYPES['WORLD_UPDATE'], {
+                        'action': 'break',
+                        'position': {'x': x, 'y': y + 1, 'z': z},
+                        'blockType': block_type
+                    })
+            
+            # Remove container if breaking a chest
+            if block_type == BLOCK_TYPES['CHEST']:
+                container_key = f"{x},{y},{z}"
+                if container_key in self.world.containers:
+                    del self.world.containers[container_key]
+                    logger.info(f"Removed container at ({x},{y},{z})")
+            
             # Spawn item entity for the block
             item_type = BLOCK_DROPS.get(block_type)
             if item_type:
@@ -2356,7 +2598,7 @@ class VoxelServer:
         # Send success message
         await self.send_to_client(client_id, MESSAGE_TYPES['CRAFT_ITEM'], {
             'success': True,
-            'itemName': str(result_type),  # Could map to names
+            'itemName': ITEM_NAMES.get(result_type, f'Item {result_type}'),
             'count': result_count
         })
         
@@ -2545,7 +2787,7 @@ class VoxelServer:
             return
         
         # Respawn player at spawn point
-        player.position = [0.0, 80.0, 0.0]
+        player.position = self.get_spawn_position()
         player.velocity = [0.0, 0.0, 0.0]
         player.health = player.max_health
         player.is_dead = False
@@ -2912,7 +3154,7 @@ class VoxelServer:
         message = json.dumps({'type': message_type, 'data': data})
         disconnected_clients = []
         
-        for client_id, websocket in self.clients.items():
+        for client_id, websocket in list(self.clients.items()):
             if client_id != exclude_client:
                 try:
                     await websocket.send(message)
@@ -2950,14 +3192,20 @@ class VoxelServer:
             })
         self.db.save_item_entities(entities)
         
-        # Save all online players
+        # Save all online players with persistent user_id
         for player_id, player in self.players.items():
+            websocket = self.clients.get(player_id)
+            user_id = getattr(websocket, 'user_id', None) if websocket else None
             self.db.save_player(
                 player_id,
                 player.username,
                 {'x': player.position[0], 'y': player.position[1], 'z': player.position[2]},
                 player.inventory.to_dict(),
-                player.health
+                player.health,
+                user_id=user_id,
+                level=player.level,
+                experience=player.experience,
+                equipment={'weapon': player.equipped_weapon, 'armor': player.equipped_armor}
             )
         
         elapsed = time.time() - start_time
@@ -2981,6 +3229,19 @@ class VoxelServer:
         
         elapsed = time.time() - start_time
         logger.info(f"World loaded in {elapsed:.2f}s: {len(entities)} entities")
+    
+    def get_spawn_position(self) -> List[float]:
+        """Return a safe spawn near the starter town (chunk 0,0 center area)."""
+        spawn_x = 8
+        spawn_z = 8
+        spawn_y = 100
+
+        for y in range(CHUNK_HEIGHT - 1, 0, -1):
+            if self.world.get_block(spawn_x, y, spawn_z) != BLOCK_TYPES['AIR']:
+                spawn_y = y + 2
+                break
+
+        return [float(spawn_x), float(spawn_y), float(spawn_z)]
     
     async def stream_chunks_to_player(self, client_id: str):
         """Send any chunks the player is missing within load distance."""
@@ -3065,51 +3326,52 @@ class VoxelServer:
         dx = new_position[0] - player.last_position[0]
         dy = new_position[1] - player.last_position[1]
         dz = new_position[2] - player.last_position[2]
-        horizontal_distance = math.sqrt(dx*dx + dz*dz)
         total_distance = math.sqrt(dx*dx + dy*dy + dz*dz)
         
+        # Always update tracking to prevent cascading false positives
+        player.last_position = new_position.copy()
+        player.last_move_time = current_time
+        
+        # Skip speed checks for very small time deltas (unreliable calculation)
+        if time_delta < 0.05:
+            return True
+        
         # Teleport detection: reject single-frame jumps > 50 blocks
-        # (legitimate movement at MAX_SPEED=20 over 5s = 100 blocks, but per-tick is much less)
         TELEPORT_THRESHOLD = 50.0
         if total_distance > TELEPORT_THRESHOLD:
             logger.warning(f"Teleport detected for {player.username}: {total_distance:.1f} blocks in {time_delta:.2f}s "
                           f"from {player.last_position} to {new_position}")
             player.speed_violations += 5  # Heavy penalty
-            if player.speed_violations > 10:
+            if player.speed_violations > 15:
                 logger.warning(f"Kicking player {player.username} for teleport hacking")
-            return False
+                return False
+            return True  # Accept but track violation
         
         # Calculate speed (blocks per second)
         speed = total_distance / time_delta
         
         # Y-axis validation: allow falling (gravity) but limit upward speed
-        # Legitimate jump gives ~15 blocks/s upward; anything beyond that is suspicious
-        MAX_UPWARD_SPEED = 25.0
-        if time_delta > 0.05 and dy > 0:
+        MAX_UPWARD_SPEED = 30.0
+        if dy > 0:
             upward_speed = dy / time_delta
             if upward_speed > MAX_UPWARD_SPEED:
                 logger.warning(f"Player {player.username} upward speed violation: {upward_speed:.2f} blocks/s")
                 player.speed_violations += 2
-                if player.speed_violations > 10:
+                if player.speed_violations > 15:
                     return False
         
-        # Check if horizontal speed is within limits
-        max_speed = MAX_SPEED if player.on_ground else MAX_SPEED * 1.5  # Allow 50% more speed in air
+        # Check if speed is within limits
+        max_speed = MAX_SPEED if player.on_ground else MAX_SPEED * 1.5  # Allow 50% more in air
         if speed > max_speed:
-            logger.warning(f"Player {player.username} speed violation: {speed:.2f} blocks/s (max: {max_speed:.1f})")
             player.speed_violations += 1
             
-            # Kick player after too many violations
-            if player.speed_violations > 10:
-                logger.warning(f"Kicking player {player.username} for excessive speed violations")
+            # Only kick after sustained violations
+            if player.speed_violations > 15:
+                logger.warning(f"Kicking player {player.username} for excessive speed violations ({player.speed_violations})")
                 return False
         else:
             # Decay violations on valid movement
             player.speed_violations = max(0, player.speed_violations - 1)
-        
-        # Update last position and time
-        player.last_position = new_position.copy()
-        player.last_move_time = current_time
         
         return True
     
@@ -3214,7 +3476,7 @@ class VoxelServer:
         # Start WebSocket server
         server = await websockets.serve(
             self.handle_client,
-            "localhost",
+            "0.0.0.0",
             3001,
             ping_interval=20,
             ping_timeout=10
@@ -3390,7 +3652,7 @@ class MobManager:
                     logger.info(f"Corpse {mob_id} ({mob.type}) despawned after {mob.corpse_duration}s")
                 continue
             
-            await self._tick_mob(mob, players, server, current_time)
+            await self._tick_mob(mob, players, world, server, current_time)
 
         # Despawn distant living mobs
         if players:
@@ -3404,7 +3666,7 @@ class MobManager:
                 self.mobs.pop(mob_id, None)
                 await server.broadcast(MESSAGE_TYPES['MOB_DESPAWN'], {'mobId': mob_id})
 
-    async def _tick_mob(self, mob: Mob, players: Dict, server, current_time: float):
+    async def _tick_mob(self, mob: Mob, players: Dict, world, server, current_time: float):
         # Handle passive mob following behavior
         if mob.is_passive() and mob.follow_target_id:
             follow_target = players.get(mob.follow_target_id)
@@ -3421,8 +3683,12 @@ class MobManager:
                     # Move toward player
                     dxz = math.sqrt(dx*dx + dz*dz)
                     if dxz > 0:
-                        mob.position[0] += (dx / dxz) * mob.speed * self.tick_dt
-                        mob.position[2] += (dz / dxz) * mob.speed * self.tick_dt
+                        new_x = mob.position[0] + (dx / dxz) * mob.speed * self.tick_dt
+                        new_z = mob.position[2] + (dz / dxz) * mob.speed * self.tick_dt
+                        # Only move if destination is not inside a solid block
+                        if not world.is_position_blocked(new_x, mob.position[1], new_z, server.door_states):
+                            mob.position[0] = new_x
+                            mob.position[2] = new_z
                         
                         # Broadcast movement
                         if current_time - mob.last_broadcast_time >= mob.broadcast_interval:
@@ -3475,8 +3741,19 @@ class MobManager:
 
         moved = False
         if nearest_player is not None and nearest_dist <= mob.detection_range:
-            mob.target_player_id = nearest_player.id
-            if nearest_dist <= mob.attack_range:
+            # Line-of-sight check: mob can only detect/target through clear air
+            has_los = world.has_line_of_sight(
+                mob.position[0], mob.position[1], mob.position[2],
+                nearest_player.position[0], nearest_player.position[1], nearest_player.position[2],
+                server.door_states
+            )
+            
+            if not has_los:
+                # Wall between mob and player — lose target and idle
+                mob.state = 'idle'
+                mob.target_player_id = None
+            elif nearest_dist <= mob.attack_range:
+                mob.target_player_id = nearest_player.id
                 mob.state = 'attacking'
                 if current_time - mob.last_attack_time >= mob.attack_cooldown:
                     mob.last_attack_time = current_time
@@ -3499,14 +3776,19 @@ class MobManager:
                     if died:
                         await server.handle_player_death(nearest_player.id)
             else:
+                mob.target_player_id = nearest_player.id
                 mob.state = 'chasing'
                 dx = nearest_player.position[0] - mob.position[0]
                 dz = nearest_player.position[2] - mob.position[2]
                 length = math.sqrt(dx*dx + dz*dz)
                 if length > 0:
-                    mob.position[0] += (dx / length) * mob.speed * self.tick_dt
-                    mob.position[2] += (dz / length) * mob.speed * self.tick_dt
-                moved = True
+                    new_x = mob.position[0] + (dx / length) * mob.speed * self.tick_dt
+                    new_z = mob.position[2] + (dz / length) * mob.speed * self.tick_dt
+                    # Only move if destination is not inside a solid block
+                    if not world.is_position_blocked(new_x, mob.position[1], new_z, server.door_states):
+                        mob.position[0] = new_x
+                        mob.position[2] = new_z
+                    moved = True
         else:
             mob.state = 'idle'
             mob.target_player_id = None

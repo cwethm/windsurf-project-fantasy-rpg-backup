@@ -69,6 +69,17 @@ BLOCK_TYPES = {
     'TAILOR_BENCH': 81,
     'LEATHERWORKER_BENCH': 82,
     'FLETCHING_BENCH': 83,
+    # Structural blocks
+    'WOODEN_DOOR': 90,
+    'IRON_DOOR': 91,
+    'FENCE': 92,
+    'FENCE_GATE': 93,
+    'LADDER': 94,
+    'WOODEN_STAIRS': 95,
+    'STONE_STAIRS': 96,
+    'TRAPDOOR': 97,
+    'WINDOW': 98,
+    'IRON_BARS': 99,
 }
 
 # Reverse lookup: ID -> name
@@ -310,4 +321,6 @@ MESSAGE_TYPES = {
     'QUEST_COMPLETE': 'quest_complete',
     'QUEST_UPDATE': 'quest_update',
     'GIVE_ITEMS': 'give_items',
+    'TOGGLE_DOOR': 'toggle_door',
+    'DOOR_STATE': 'door_state',
 }

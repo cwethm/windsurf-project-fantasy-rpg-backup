@@ -89,6 +89,9 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         self.manager = MobManager()
         self.server = Mock()
         self.server.broadcast = AsyncMock()
+        self.world = Mock()
+        self.world.has_line_of_sight = Mock(return_value=True)
+        self.world.is_position_blocked = Mock(return_value=False)
         
     async def test_passive_mob_follows_player(self):
         """Test passive mob moves toward follow target"""
@@ -104,7 +107,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         initial_x = mob.position[0]
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should have moved toward player (positive X direction)
         self.assertGreater(mob.position[0], initial_x)
@@ -124,7 +127,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         initial_pos = mob.position.copy()
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should stay in place (close enough)
         self.assertEqual(mob.state, 'following')
@@ -142,7 +145,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should stop following
         self.assertIsNone(mob.follow_target_id)
@@ -158,7 +161,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should stop following
         self.assertIsNone(mob.follow_target_id)
@@ -176,7 +179,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Mob should stay idle (not following anyone)
         self.assertEqual(mob.state, 'idle')
@@ -195,7 +198,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Hostile mob should chase, not follow
         self.assertEqual(mob.state, 'chasing')
@@ -214,7 +217,7 @@ class TestMobFollowBehavior(unittest.IsolatedAsyncioTestCase):
         
         current_time = 1.0
         
-        await self.manager._tick_mob(mob, players, self.server, current_time)
+        await self.manager._tick_mob(mob, players, self.world, self.server, current_time)
         
         # Should have broadcast movement
         self.server.broadcast.assert_called()

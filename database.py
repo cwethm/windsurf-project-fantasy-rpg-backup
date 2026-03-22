@@ -54,6 +54,7 @@ class Database:
                     position_y REAL DEFAULT 0,
                     position_z REAL DEFAULT 0,
                     inventory TEXT DEFAULT '[]',
+                    equipment TEXT DEFAULT '{}',
                     health INTEGER DEFAULT 100,
                     level INTEGER DEFAULT 1,
                     experience INTEGER DEFAULT 0,
@@ -62,6 +63,13 @@ class Database:
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             """)
+            
+            # Add equipment column if missing (migration)
+            try:
+                conn.execute("ALTER TABLE players ADD COLUMN equipment TEXT DEFAULT '{}'")
+                logger.info("Added equipment column to players table")
+            except Exception:
+                pass  # Column already exists
             
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS world_chunks (
@@ -127,17 +135,22 @@ class Database:
 
             conn.commit()
     
-    def save_player(self, player_id: str, username: str, position: Dict, inventory: List, health: int = 100, user_id: str = None):
+    def save_player(self, player_id: str, username: str, position: Dict, inventory: List, health: int = 100, user_id: str = None, level: int = 1, experience: int = 0, equipment: Dict = None):
         """Save player data to database"""
         with self.lock:
             try:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.execute("""
                         INSERT OR REPLACE INTO players 
-                        (id, user_id, username, position_x, position_y, position_z, inventory, health, last_login)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, user_id, username, position_x, position_y, position_z, inventory, equipment, health, level, experience, last_login)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (player_id, user_id or player_id, username, position['x'], position['y'], position['z'], 
-                          json.dumps(inventory), health, time.time()))
+                          json.dumps(inventory), json.dumps(equipment or {}), health, level, experience, time.time()))
+                    # Clean up old rows for this user_id, keep only the latest
+                    effective_uid = user_id or player_id
+                    conn.execute("""
+                        DELETE FROM players WHERE user_id = ? AND id != ?
+                    """, (effective_uid, player_id))
                     conn.commit()
             except Exception as e:
                 logger.error(f"Failed to save player {player_id}: {e}")
@@ -149,16 +162,18 @@ class Database:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.row_factory = sqlite3.Row
                     cursor = conn.execute(
-                        "SELECT * FROM players WHERE id = ?", (player_id,)
+                        "SELECT * FROM players WHERE id = ? ORDER BY last_login DESC LIMIT 1", (player_id,)
                     )
                     row = cursor.fetchone()
                     
                     if row:
+                        eq_raw = row['equipment'] if 'equipment' in row.keys() else '{}'
                         return {
                             'id': row['id'],
                             'username': row['username'],
                             'position': {'x': row['position_x'], 'y': row['position_y'], 'z': row['position_z']},
                             'inventory': json.loads(row['inventory']),
+                            'equipment': json.loads(eq_raw) if eq_raw else {},
                             'health': row['health'],
                             'level': row['level'],
                             'experience': row['experience']
@@ -167,6 +182,34 @@ class Database:
                 logger.error(f"Failed to load player {player_id}: {e}")
         return None
     
+    def load_player_by_user_id(self, user_id: str) -> Optional[Dict]:
+        """Load player data from database by user_id (persistent across sessions)"""
+        with self.lock:
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.execute(
+                        "SELECT * FROM players WHERE user_id = ? ORDER BY last_login DESC LIMIT 1", (user_id,)
+                    )
+                    row = cursor.fetchone()
+                    
+                    if row:
+                        eq_raw = row['equipment'] if 'equipment' in row.keys() else '{}'
+                        return {
+                            'id': row['id'],
+                            'user_id': row['user_id'],
+                            'username': row['username'],
+                            'position': {'x': row['position_x'], 'y': row['position_y'], 'z': row['position_z']},
+                            'inventory': json.loads(row['inventory']),
+                            'equipment': json.loads(eq_raw) if eq_raw else {},
+                            'health': row['health'],
+                            'level': row['level'],
+                            'experience': row['experience']
+                        }
+            except Exception as e:
+                logger.error(f"Failed to load player by user_id {user_id}: {e}")
+        return None
+
     def save_chunk(self, chunk_x: int, chunk_z: int, chunk_data: List[int]):
         """Save chunk data to database"""
         with self.lock:
