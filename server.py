@@ -33,6 +33,18 @@ MINING_COOLDOWN = 0.1  # Minimum time between block breaks (seconds)
 PLACING_COOLDOWN = 0.1  # Minimum time between block places (seconds)
 MAX_REACH_DISTANCE = 6.0  # Maximum distance to interact with blocks
 
+CRAFT_TIERS = {
+    'APPRENTICE': 1,
+    'JOURNEYMAN': 2,
+    'MASTER': 3,
+}
+
+CRAFT_XP_THRESHOLDS = {
+    CRAFT_TIERS['APPRENTICE']: 0,
+    CRAFT_TIERS['JOURNEYMAN']: 250,
+    CRAFT_TIERS['MASTER']: 800,
+}
+
 # Constants imported from shared/constants.py
 
 # Crafting recipes
@@ -621,7 +633,133 @@ CRAFTING_RECIPES = {
             {'type': ITEM_TYPES['KNIFE'], 'count': 1}
         ],
         'result': {'type': ITEM_TYPES['FLETCHING_BENCH'], 'count': 1}
+    },
+    # Phase 3 recipes
+    'health_potion': {
+        'ingredients': [
+            {'type': ITEM_TYPES['HERBAL_PASTE'], 'count': 1},
+            {'type': ITEM_TYPES['BERRIES'], 'count': 2},
+            {'type': ITEM_TYPES['GLASS_VIAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['HEALTH_POTION'], 'count': 1}
+    },
+    'mana_potion': {
+        'ingredients': [
+            {'type': ITEM_TYPES['HERB'], 'count': 2},
+            {'type': ITEM_TYPES['MUSHROOM'], 'count': 1},
+            {'type': ITEM_TYPES['GLASS_VIAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['MANA_POTION'], 'count': 1}
+    },
+    'swift_tonic': {
+        'ingredients': [
+            {'type': ITEM_TYPES['HERB_TEA'], 'count': 1},
+            {'type': ITEM_TYPES['ROOTS'], 'count': 1},
+            {'type': ITEM_TYPES['GLASS_VIAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['SWIFT_TONIC'], 'count': 1}
+    },
+    'power_tonic': {
+        'ingredients': [
+            {'type': ITEM_TYPES['ROASTED_MEAT'], 'count': 1},
+            {'type': ITEM_TYPES['FAT'], 'count': 1},
+            {'type': ITEM_TYPES['GLASS_VIAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['POWER_TONIC'], 'count': 1}
+    },
+    'protection_tonic': {
+        'ingredients': [
+            {'type': ITEM_TYPES['HERB'], 'count': 2},
+            {'type': ITEM_TYPES['LEATHER'], 'count': 1},
+            {'type': ITEM_TYPES['GLASS_VIAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['PROTECTION_TONIC'], 'count': 1}
+    },
+    'scroll_firebolt': {
+        'ingredients': [
+            {'type': ITEM_TYPES['PAPER'], 'count': 1},
+            {'type': ITEM_TYPES['HERBAL_PASTE'], 'count': 1},
+            {'type': ITEM_TYPES['CHARCOAL'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['SCROLL_FIREBOLT'], 'count': 1}
+    },
+    'scroll_frost_nova': {
+        'ingredients': [
+            {'type': ITEM_TYPES['PAPER'], 'count': 1},
+            {'type': ITEM_TYPES['MUSHROOM'], 'count': 1},
+            {'type': ITEM_TYPES['WATER'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['SCROLL_FROST_NOVA'], 'count': 1}
+    },
+    'socketed_gem': {
+        'ingredients': [
+            {'type': ITEM_TYPES['GEM_SEAM'], 'count': 1},
+            {'type': ITEM_TYPES['METAL_BAND'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['SOCKETED_GEM'], 'count': 1}
+    },
+    'enchanted_iron_sword': {
+        'ingredients': [
+            {'type': ITEM_TYPES['IRON_SWORD'], 'count': 1},
+            {'type': ITEM_TYPES['SCROLL_FIREBOLT'], 'count': 1},
+            {'type': ITEM_TYPES['SOCKETED_GEM'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['ENCHANTED_IRON_SWORD'], 'count': 1}
+    },
+    'enchanted_leather_chestplate': {
+        'ingredients': [
+            {'type': ITEM_TYPES['LEATHER_CHESTPLATE'], 'count': 1},
+            {'type': ITEM_TYPES['PROTECTION_TONIC'], 'count': 1},
+            {'type': ITEM_TYPES['SOCKETED_GEM'], 'count': 1}
+        ],
+        'result': {'type': ITEM_TYPES['ENCHANTED_LEATHER_CHESTPLATE'], 'count': 1}
     }
+}
+
+RECIPE_TIER_REQUIREMENTS = {
+    'health_potion': CRAFT_TIERS['APPRENTICE'],
+    'mana_potion': CRAFT_TIERS['APPRENTICE'],
+    'swift_tonic': CRAFT_TIERS['JOURNEYMAN'],
+    'power_tonic': CRAFT_TIERS['JOURNEYMAN'],
+    'protection_tonic': CRAFT_TIERS['JOURNEYMAN'],
+    'scroll_firebolt': CRAFT_TIERS['JOURNEYMAN'],
+    'scroll_frost_nova': CRAFT_TIERS['JOURNEYMAN'],
+    'socketed_gem': CRAFT_TIERS['MASTER'],
+    'enchanted_iron_sword': CRAFT_TIERS['MASTER'],
+    'enchanted_leather_chestplate': CRAFT_TIERS['MASTER'],
+}
+
+RECIPE_XP_REWARDS = {
+    'health_potion': 20,
+    'mana_potion': 20,
+    'swift_tonic': 30,
+    'power_tonic': 30,
+    'protection_tonic': 30,
+    'scroll_firebolt': 35,
+    'scroll_frost_nova': 35,
+    'socketed_gem': 50,
+    'enchanted_iron_sword': 65,
+    'enchanted_leather_chestplate': 65,
+}
+
+DEFAULT_RECIPE_XP = 10
+
+FOOD_BUFFS = {
+    ITEM_TYPES['ROASTED_MEAT']: {'effect': 'power', 'duration': 45.0, 'value': 0.25},
+    ITEM_TYPES['BREAD']: {'effect': 'regen', 'duration': 30.0, 'value': 2.0},
+    ITEM_TYPES['HERB_TEA']: {'effect': 'speed', 'duration': 35.0, 'value': 0.2},
+    ITEM_TYPES['STEW']: {'effect': 'regen', 'duration': 45.0, 'value': 3.0},
+    ITEM_TYPES['BERRY_MASH']: {'effect': 'speed', 'duration': 20.0, 'value': 0.15},
+}
+
+USEABLE_EFFECT_ITEMS = {
+    ITEM_TYPES['HEALTH_POTION']: {'kind': 'heal', 'amount': 40},
+    ITEM_TYPES['MANA_POTION']: {'kind': 'mana', 'amount': 35},
+    ITEM_TYPES['SWIFT_TONIC']: {'kind': 'buff', 'effect': 'speed', 'duration': 45.0, 'value': 0.35},
+    ITEM_TYPES['POWER_TONIC']: {'kind': 'buff', 'effect': 'power', 'duration': 45.0, 'value': 0.35},
+    ITEM_TYPES['PROTECTION_TONIC']: {'kind': 'buff', 'effect': 'protection', 'duration': 45.0, 'value': 0.3},
+    ITEM_TYPES['SCROLL_FIREBOLT']: {'kind': 'buff', 'effect': 'power', 'duration': 25.0, 'value': 0.4},
+    ITEM_TYPES['SCROLL_FROST_NOVA']: {'kind': 'buff', 'effect': 'protection', 'duration': 25.0, 'value': 0.35},
 }
 
 BLOCK_SIZE = 1
@@ -813,6 +951,14 @@ class Player:
         self.experience = 0
         self.level = 1
         self.experience_to_next_level = 100
+        self.crafting_xp = 0
+        self.crafting_tier = CRAFT_TIERS['APPRENTICE']
+        self.unlocked_recipes = {
+            'health_potion', 'mana_potion', 'swift_tonic', 'power_tonic',
+            'protection_tonic', 'scroll_firebolt', 'scroll_frost_nova',
+            'socketed_gem', 'enchanted_iron_sword', 'enchanted_leather_chestplate'
+        }
+        self.active_buffs: Dict[str, Dict[str, float]] = {}
         
         # Anti-cheat tracking
         self.last_position = self.position.copy()
@@ -835,6 +981,8 @@ class Player:
         if current_time - self.last_damage_time < self.damage_cooldown:
             return False
         
+        now = current_time
+
         # Calculate armor reduction
         total_protection = 0
         for armor_piece in self.equipped_armor.values():
@@ -843,6 +991,7 @@ class Player:
                 total_protection += armor_piece.get('protection', 0)
         
         armor_reduction = min(0.8, total_protection * 0.04)  # Max 80% reduction
+        armor_reduction = min(0.9, armor_reduction + self.get_protection_bonus(now))
         actual_damage = damage * (1 - armor_reduction)
         
         # Damage armor durability
@@ -864,9 +1013,10 @@ class Player:
     
     def get_attack_damage(self) -> float:
         """Get the player's attack damage based on equipped weapon"""
+        now = time.time()
         if self.equipped_weapon:
-            return self.equipped_weapon.get('damage', 5)
-        return 5  # Base fist damage
+            return self.equipped_weapon.get('damage', 5) * self.get_damage_multiplier(now)
+        return 5 * self.get_damage_multiplier(now)  # Base fist damage
     
     def reduce_weapon_durability(self, amount: int = 1) -> bool:
         """Reduce weapon durability, returns True if weapon broke"""
@@ -1018,6 +1168,58 @@ class Player:
             leveled_up = True
         
         return leveled_up
+
+    def get_crafting_tier_name(self) -> str:
+        if self.crafting_tier >= CRAFT_TIERS['MASTER']:
+            return 'Master'
+        if self.crafting_tier >= CRAFT_TIERS['JOURNEYMAN']:
+            return 'Journeyman'
+        return 'Apprentice'
+
+    def give_crafting_experience(self, amount: int) -> bool:
+        self.crafting_xp += amount
+        old_tier = self.crafting_tier
+
+        if self.crafting_xp >= CRAFT_XP_THRESHOLDS[CRAFT_TIERS['MASTER']]:
+            self.crafting_tier = CRAFT_TIERS['MASTER']
+        elif self.crafting_xp >= CRAFT_XP_THRESHOLDS[CRAFT_TIERS['JOURNEYMAN']]:
+            self.crafting_tier = CRAFT_TIERS['JOURNEYMAN']
+        else:
+            self.crafting_tier = CRAFT_TIERS['APPRENTICE']
+
+        return self.crafting_tier > old_tier
+
+    def has_active_buff(self, buff_name: str, now: float) -> bool:
+        buff = self.active_buffs.get(buff_name)
+        return bool(buff and buff.get('expires_at', 0) > now)
+
+    def set_buff(self, buff_name: str, duration: float, value: float, now: float):
+        self.active_buffs[buff_name] = {
+            'value': value,
+            'expires_at': now + duration,
+        }
+
+    def cleanup_expired_buffs(self, now: float):
+        expired = [name for name, buff in self.active_buffs.items() if buff.get('expires_at', 0) <= now]
+        for name in expired:
+            del self.active_buffs[name]
+
+    def get_damage_multiplier(self, now: float) -> float:
+        mult = 1.0
+        if self.has_active_buff('power', now):
+            mult += self.active_buffs['power'].get('value', 0.0)
+        return mult
+
+    def get_speed_multiplier(self, now: float) -> float:
+        mult = 1.0
+        if self.has_active_buff('speed', now):
+            mult += self.active_buffs['speed'].get('value', 0.0)
+        return mult
+
+    def get_protection_bonus(self, now: float) -> float:
+        if self.has_active_buff('protection', now):
+            return self.active_buffs['protection'].get('value', 0.0)
+        return 0.0
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert player to dictionary for network transmission"""
@@ -1032,7 +1234,9 @@ class Player:
             'max_mana': self.max_mana,
             'experience': self.experience,
             'level': self.level,
-            'experience_to_next_level': self.experience_to_next_level
+            'experience_to_next_level': self.experience_to_next_level,
+            'crafting_xp': self.crafting_xp,
+            'crafting_tier': self.get_crafting_tier_name()
         }
 
 class Inventory:
@@ -1127,6 +1331,7 @@ class World:
         self.dirty_chunks = set()  # Track chunks modified since last save
         self.containers = {}  # position string -> Container
         self.item_entities = {}  # position string -> {type, harvester_id, spawn_time}
+        self.town_sites: Dict[str, Dict[str, Any]] = {}  # site_id -> town site metadata
         self.db = db
         self.world_generator = world_generator
         self.generate_initial_world()
@@ -1140,12 +1345,29 @@ class World:
     def generate_chunk(self, chunk_x: int, chunk_z: int) -> List[int]:
         """Generate a chunk using the new layered world generation system."""
         result = self.world_generator.generate_chunk(chunk_x, chunk_z)
+
+        site = result.metadata.get('site')
+        if site is not None:
+            site_type = getattr(getattr(site, 'site_type', None), 'value', '').lower()
+            if site_type in {'village', 'hamlet', 'fort', 'monastery'}:
+                site_id = getattr(site, 'site_id', f"{site_type}_{chunk_x}_{chunk_z}")
+                self.town_sites[site_id] = {
+                    'site_id': site_id,
+                    'site_type': site_type,
+                    'x': int(getattr(site, 'x', chunk_x * CHUNK_SIZE + CHUNK_SIZE // 2)),
+                    'y': int(getattr(site, 'y', 0) or 0),
+                    'z': int(getattr(site, 'z', chunk_z * CHUNK_SIZE + CHUNK_SIZE // 2)),
+                    'radius': int(getattr(site, 'radius', 24) or 24),
+                }
         
         # Worldgen block IDs already match shared/constants.py BLOCK_TYPES.
         # No conversion needed - just store and return directly.
         chunk_key = f"{chunk_x},{chunk_z}"
         self.chunks[chunk_key] = result.blocks
         return result.blocks
+
+    def get_town_sites(self) -> List[Dict[str, Any]]:
+        return list(self.town_sites.values())
     
     def get_chunk(self, chunk_x: int, chunk_z: int) -> List[int]:
         chunk_key = f"{chunk_x},{chunk_z}"
@@ -1305,6 +1527,9 @@ class VoxelServer:
         self.npcs: Dict[str, NPC] = {}
         self.quests: Dict[str, Quest] = {}
         self.player_quests: Dict[str, List[str]] = {}  # player_id -> list of quest_ids
+        self.world_start_time = time.time()
+        self.day_length_seconds = 300.0
+        self.last_world_time_broadcast = 0.0
         
         # Initialize NPCs and quests
         self.initialize_npcs()
@@ -1312,8 +1537,28 @@ class VoxelServer:
     
     def initialize_npcs(self):
         """Initialize NPCs in the world"""
-        # Create some sample NPCs
-        npc1 = NPC("npc_blacksmith", "Blacksmith", [10.0, 34.0, 10.0], "blacksmith")
+        town_sites = self.world.get_town_sites()
+        if town_sites:
+            town_anchor = min(town_sites, key=lambda s: (s['x'] * s['x']) + (s['z'] * s['z']))
+            anchor_x = int(town_anchor['x'])
+            anchor_z = int(town_anchor['z'])
+        else:
+            anchor_x = 8
+            anchor_z = 8
+
+        def ground_y(x: int, z: int) -> float:
+            for y in range(CHUNK_HEIGHT - 1, 0, -1):
+                if self.world.get_block(x, y, z) != BLOCK_TYPES['AIR']:
+                    return float(y + 1)
+            return 34.0
+
+        def npc_position(dx: int, dz: int) -> List[float]:
+            px = anchor_x + dx
+            pz = anchor_z + dz
+            return [float(px), ground_y(px, pz), float(pz)]
+
+        # Create town NPCs
+        npc1 = NPC("npc_blacksmith", "Blacksmith", npc_position(3, 2), "blacksmith")
         npc1.dialogue_tree = {
             'default': {
                 'text': "Welcome to my forge! I can teach you how to craft powerful weapons and armor.",
@@ -1326,6 +1571,7 @@ class VoxelServer:
             'crafting': {
                 'text': "Crafting requires materials. Gather resources from the world, then use the crafting panel (press C).",
                 'options': [
+                    {'text': 'Teach me advanced alchemy recipes.', 'action': 'unlock_recipe_bundle', 'bundle': 'blacksmith_journeyman'},
                     {'text': 'What materials do I need?', 'next': 'materials'},
                     {'text': 'Back', 'next': 'default'}
                 ]
@@ -1345,7 +1591,7 @@ class VoxelServer:
             }
         }
         
-        npc2 = NPC("npc_merchant", "Merchant", [-10.0, 34.0, -10.0], "merchant")
+        npc2 = NPC("npc_merchant", "Merchant", npc_position(-3, 2), "merchant")
         npc2.dialogue_tree = {
             'default': {
                 'text': "Greetings, traveler! I trade in rare goods and offer quests for the adventurous.",
@@ -1356,8 +1602,9 @@ class VoxelServer:
                 ]
             },
             'trade': {
-                'text': "I'm looking for diamonds and rare ores. Bring me what you find and I'll pay well!",
+                'text': "I'm looking for diamonds and rare ores. I can also teach rare crafting secrets.",
                 'options': [
+                    {'text': 'Teach me master gemcraft recipes.', 'action': 'unlock_recipe_bundle', 'bundle': 'merchant_master'},
                     {'text': 'I\'ll keep that in mind.', 'next': 'default'}
                 ]
             },
@@ -1369,9 +1616,27 @@ class VoxelServer:
                 ]
             }
         }
+
+        npc3 = NPC("npc_villager", "Villager", npc_position(0, -3), "villager")
+        npc3.dialogue_tree = {
+            'default': {
+                'text': "Welcome to town! Stay close to the roads at night and you'll be safer.",
+                'options': [
+                    {'text': 'Any local advice?', 'next': 'advice'},
+                    {'text': 'Thanks.', 'next': 'exit'}
+                ]
+            },
+            'advice': {
+                'text': "Monsters avoid the town perimeter. If you're low on supplies, head back inside the walls.",
+                'options': [
+                    {'text': 'Good to know.', 'next': 'default'}
+                ]
+            }
+        }
         
         self.npcs[npc1.id] = npc1
         self.npcs[npc2.id] = npc2
+        self.npcs[npc3.id] = npc3
     
     def initialize_quests(self):
         """Initialize available quests"""
@@ -1383,7 +1648,8 @@ class VoxelServer:
         ]
         quest1.rewards = [
             {'type': 'item', 'item_type': 304, 'count': 2},  # 2 diamonds
-            {'type': 'experience', 'amount': 100}
+            {'type': 'experience', 'amount': 100},
+            {'type': 'recipe_unlock', 'recipe_id': 'power_tonic'}
         ]
         quest1.completion_text = "Excellent! These iron ingots will help me craft many fine weapons. Here's your reward!"
         
@@ -1395,7 +1661,8 @@ class VoxelServer:
         ]
         quest2.rewards = [
             {'type': 'item', 'item_type': 301, 'count': 20},  # 20 coal
-            {'type': 'experience', 'amount': 50}
+            {'type': 'experience', 'amount': 50},
+            {'type': 'recipe_unlock', 'recipe_id': 'swift_tonic'}
         ]
         quest2.completion_text = "Thank you for delivering this! The merchant sends his regards."
         
@@ -1688,6 +1955,8 @@ class VoxelServer:
             await self.handle_toggle_item_lock(client_id, data)
         elif message_type == MESSAGE_TYPES['NPC_INTERACT']:
             await self.handle_npc_interact(client_id, data)
+        elif message_type == MESSAGE_TYPES['NPC_DIALOGUE_RESPONSE']:
+            await self.handle_npc_dialogue(client_id, data)
         elif message_type == MESSAGE_TYPES['COMBAT_HIT']:
             await self.handle_combat_hit(client_id, data)
         elif message_type == MESSAGE_TYPES['MOB_INTERACT']:
@@ -1702,6 +1971,8 @@ class VoxelServer:
             await self.handle_drop_item(client_id, data)
         elif message_type == MESSAGE_TYPES['CRAFT_ITEM']:
             await self.handle_craft_item(client_id, data)
+        elif message_type == MESSAGE_TYPES['USE_ITEM']:
+            await self.handle_use_item(client_id, data)
         elif message_type == MESSAGE_TYPES['TOGGLE_DOOR']:
             await self.handle_toggle_door(client_id, data)
     
@@ -1976,7 +2247,9 @@ class VoxelServer:
             'max_mana': player.max_mana,
             'experience': player.experience,
             'level': player.level,
-            'experience_to_next_level': player.experience_to_next_level
+            'experience_to_next_level': player.experience_to_next_level,
+            'crafting_xp': player.crafting_xp,
+            'crafting_tier': player.get_crafting_tier_name()
         })
         
         # Send equipment state so client panel is populated on login
@@ -2523,6 +2796,21 @@ class VoxelServer:
                 'reason': 'Recipe not found'
             })
             return
+
+        required_tier = RECIPE_TIER_REQUIREMENTS.get(recipe_id, CRAFT_TIERS['APPRENTICE'])
+        if player.crafting_tier < required_tier:
+            await self.send_to_client(client_id, MESSAGE_TYPES['CRAFT_ITEM'], {
+                'success': False,
+                'reason': f'Requires {"Journeyman" if required_tier == CRAFT_TIERS["JOURNEYMAN"] else "Master"} crafting'
+            })
+            return
+
+        if recipe_id in RECIPE_TIER_REQUIREMENTS and recipe_id not in player.unlocked_recipes:
+            await self.send_to_client(client_id, MESSAGE_TYPES['CRAFT_ITEM'], {
+                'success': False,
+                'reason': 'Recipe is locked. Learn it from NPCs or quests.'
+            })
+            return
         
         # Check if player has all required ingredients
         for ingredient in recipe.get('ingredients', []):
@@ -2601,8 +2889,89 @@ class VoxelServer:
             'itemName': ITEM_NAMES.get(result_type, f'Item {result_type}'),
             'count': result_count
         })
+
+        crafting_xp = RECIPE_XP_REWARDS.get(recipe_id, DEFAULT_RECIPE_XP)
+        crafted_tier_up = player.give_crafting_experience(crafting_xp)
+
+        await self.send_to_client(client_id, MESSAGE_TYPES['PLAYER_STATS'], {
+            'health': player.health,
+            'max_health': player.max_health,
+            'mana': player.mana,
+            'max_mana': player.max_mana,
+            'experience': player.experience,
+            'level': player.level,
+            'experience_to_next_level': player.experience_to_next_level,
+            'crafting_xp': player.crafting_xp,
+            'crafting_tier': player.get_crafting_tier_name()
+        })
+
+        if crafted_tier_up:
+            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                'message': f'Crafting tier increased: {player.get_crafting_tier_name()}!'
+            })
         
         logger.info(f"Player {player.username} crafted {result_count}x item {result_type}")
+
+    async def handle_use_item(self, client_id: str, data: Dict[str, Any]):
+        """Use currently selected quickbar item as consumable/buff."""
+        player = self.players.get(client_id)
+        if not player:
+            return
+
+        slot_index = data.get('slot', player.inventory.selected_slot)
+        if not isinstance(slot_index, int) or slot_index < 0 or slot_index >= len(player.inventory.slots):
+            return
+
+        slot = player.inventory.slots[slot_index]
+        if not slot:
+            return
+
+        item_type = slot.get('type')
+        now = time.time()
+        effect_data = USEABLE_EFFECT_ITEMS.get(item_type)
+
+        if not effect_data and item_type in FOOD_BUFFS:
+            effect_data = {'kind': 'buff', **FOOD_BUFFS[item_type]}
+
+        if not effect_data:
+            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                'message': 'That item cannot be used directly.'
+            })
+            return
+
+        # Consume one item
+        slot['count'] = int(slot.get('count', 1)) - 1
+        if slot['count'] <= 0:
+            player.inventory.slots[slot_index] = None
+
+        if effect_data['kind'] == 'heal':
+            player.heal(effect_data.get('amount', 0))
+            msg = 'You feel restored.'
+        elif effect_data['kind'] == 'mana':
+            player.mana = min(player.max_mana, player.mana + effect_data.get('amount', 0))
+            msg = 'Your mana surges.'
+        else:
+            player.set_buff(
+                effect_data.get('effect', 'regen'),
+                float(effect_data.get('duration', 20.0)),
+                float(effect_data.get('value', 0.2)),
+                now,
+            )
+            msg = f"Buff applied: {effect_data.get('effect', 'unknown')}"
+
+        await self.send_to_client(client_id, MESSAGE_TYPES['INVENTORY_UPDATE'], player.inventory.to_dict())
+        await self.send_to_client(client_id, MESSAGE_TYPES['PLAYER_STATS'], {
+            'health': player.health,
+            'max_health': player.max_health,
+            'mana': player.mana,
+            'max_mana': player.max_mana,
+            'experience': player.experience,
+            'level': player.level,
+            'experience_to_next_level': player.experience_to_next_level,
+            'crafting_xp': player.crafting_xp,
+            'crafting_tier': player.get_crafting_tier_name()
+        })
+        await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {'message': msg})
     
     async def handle_mob_interact(self, player_id: str, data: Dict[str, Any]):
         """Handle player right-clicking on a mob (for passive mob following)"""
@@ -2990,6 +3359,31 @@ class VoxelServer:
             if 'action' in option:
                 if option['action'] == 'accept_quest' and 'quest_id' in option:
                     await self.handle_quest_accept(client_id, {'quest_id': option['quest_id']})
+                elif option['action'] == 'unlock_recipe_bundle':
+                    bundle = option.get('bundle', '')
+                    player = self.players.get(client_id)
+                    if player:
+                        bundles = {
+                            'blacksmith_journeyman': ['swift_tonic', 'power_tonic', 'scroll_firebolt'],
+                            'merchant_master': ['socketed_gem', 'enchanted_iron_sword', 'enchanted_leather_chestplate'],
+                        }
+                        unlocked = []
+                        for recipe_id in bundles.get(bundle, []):
+                            if recipe_id not in player.unlocked_recipes:
+                                player.unlocked_recipes.add(recipe_id)
+                                unlocked.append(recipe_id)
+
+                        if unlocked:
+                            await self.send_to_client(client_id, MESSAGE_TYPES['RECIPE_UNLOCK'], {
+                                'recipes': unlocked
+                            })
+                            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                                'message': f'Recipes learned: {", ".join(unlocked)}'
+                            })
+                        else:
+                            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                                'message': 'You already know these recipes.'
+                            })
             
             # Navigate to next dialogue
             if 'next' in option:
@@ -3083,7 +3477,17 @@ class VoxelServer:
                     await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
                         'message': f'LEVEL UP! You are now level {player.level}!'
                     })
-                break
+                continue
+            if reward['type'] == 'recipe_unlock':
+                recipe_id = reward.get('recipe_id')
+                if recipe_id and recipe_id not in player.unlocked_recipes:
+                    player.unlocked_recipes.add(recipe_id)
+                    await self.send_to_client(client_id, MESSAGE_TYPES['RECIPE_UNLOCK'], {
+                        'recipes': [recipe_id]
+                    })
+                    await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                        'message': f'New recipe unlocked: {recipe_id}'
+                    })
         
         # Update inventory and stats
         await self.send_to_client(client_id, MESSAGE_TYPES['INVENTORY_UPDATE'],
@@ -3452,6 +3856,33 @@ class VoxelServer:
         while self.running:
             # Update chunk loading
             self.update_chunk_loading()
+
+            # Tick player buffs/effects
+            now = time.time()
+            for player in self.players.values():
+                player.cleanup_expired_buffs(now)
+                if player.has_active_buff('regen', now):
+                    regen_value = player.active_buffs['regen'].get('value', 0.0)
+                    player.heal(regen_value * 5.0)  # update_loop runs every ~5s
+
+            # World time + day/night cycle
+            world_time_norm = ((time.time() - self.world_start_time) % self.day_length_seconds) / self.day_length_seconds
+            is_night = world_time_norm < 0.23 or world_time_norm > 0.77
+
+            # Spawn tuning by time of day
+            if is_night:
+                self.mob_manager.spawn_interval = 5.0
+                self.mob_manager.max_mobs = 80
+            else:
+                self.mob_manager.spawn_interval = 8.0
+                self.mob_manager.max_mobs = 60
+
+            if time.time() - self.last_world_time_broadcast >= 1.0:
+                self.last_world_time_broadcast = time.time()
+                await self.broadcast(MESSAGE_TYPES['WORLD_TIME'], {
+                    'time': world_time_norm,
+                    'isNight': is_night,
+                })
             
             # Save world periodically
             if time.time() - self.last_save_time >= self.save_interval:
@@ -3596,11 +4027,22 @@ class MobManager:
         self.last_spawn_time = 0.0
         self.spawn_interval  = 8.0    # seconds between spawn attempts
         self.tick_dt         = 0.35   # matches mob_update_loop sleep
+        self.town_safe_radius = 48.0
 
     def _new_id(self) -> str:
         mid = f"mob_{self._next_id}"
         self._next_id += 1
         return mid
+
+    def _is_in_town_safe_zone(self, x: float, z: float, world) -> bool:
+        for site in world.get_town_sites():
+            dx = x - site['x']
+            dz = z - site['z']
+            dist = math.sqrt(dx * dx + dz * dz)
+            safe_radius = max(self.town_safe_radius, float(site.get('radius', 24)) + 12.0)
+            if dist <= safe_radius:
+                return True
+        return False
 
     def _find_spawn_pos(self, players: Dict, world) -> Optional[Tuple]:
         if not players:
@@ -3622,6 +4064,12 @@ class MobManager:
                 mob_type = (random.choice(self.RARE_TYPES)
                             if random.random() < 0.05
                             else random.choice(self.COMMON_TYPES))
+
+                stats = MOB_STATS.get(mob_type, MOB_STATS['zombie'])
+                is_hostile = stats.get('damage', 0) > 0
+                if is_hostile and self._is_in_town_safe_zone(sx, sz, world):
+                    continue
+
                 return sx, sy, sz, mob_type
         return None
 
@@ -3667,6 +4115,41 @@ class MobManager:
                 await server.broadcast(MESSAGE_TYPES['MOB_DESPAWN'], {'mobId': mob_id})
 
     async def _tick_mob(self, mob: Mob, players: Dict, world, server, current_time: float):
+        # Passive mobs flee from nearby players unless actively following one
+        if mob.is_passive() and not mob.follow_target_id:
+            nearest_player = None
+            nearest_dist = float('inf')
+            for player in players.values():
+                if player.is_dead:
+                    continue
+                dx = player.position[0] - mob.position[0]
+                dz = player.position[2] - mob.position[2]
+                dist = math.sqrt(dx*dx + dz*dz)
+                if dist < nearest_dist:
+                    nearest_dist = dist
+                    nearest_player = player
+
+            if nearest_player and nearest_dist < 8.0:
+                away_x = mob.position[0] - nearest_player.position[0]
+                away_z = mob.position[2] - nearest_player.position[2]
+                length = math.sqrt(away_x*away_x + away_z*away_z)
+                if length > 0:
+                    flee_speed = mob.speed * 1.2
+                    new_x = mob.position[0] + (away_x / length) * flee_speed * self.tick_dt
+                    new_z = mob.position[2] + (away_z / length) * flee_speed * self.tick_dt
+                    if not world.is_position_blocked(new_x, mob.position[1], new_z, server.door_states):
+                        mob.position[0] = new_x
+                        mob.position[2] = new_z
+                        mob.state = 'fleeing'
+                        if current_time - mob.last_broadcast_time >= mob.broadcast_interval:
+                            mob.last_broadcast_time = current_time
+                            await server.broadcast(MESSAGE_TYPES['MOB_MOVE'], {
+                                'mobId': mob.id,
+                                'position': mob.position,
+                                'state': mob.state,
+                            })
+                return
+
         # Handle passive mob following behavior
         if mob.is_passive() and mob.follow_target_id:
             follow_target = players.get(mob.follow_target_id)
@@ -3741,6 +4224,24 @@ class MobManager:
 
         moved = False
         if nearest_player is not None and nearest_dist <= mob.detection_range:
+            # Pack behavior: wolves rally nearby wolves when one engages
+            if mob.type == 'wolf':
+                for packmate in self.mobs.values():
+                    if packmate.id == mob.id or packmate.type != 'wolf' or packmate.is_dead:
+                        continue
+                    dxp = packmate.position[0] - mob.position[0]
+                    dzp = packmate.position[2] - mob.position[2]
+                    if math.sqrt(dxp*dxp + dzp*dzp) <= 10.0:
+                        packmate.target_player_id = nearest_player.id
+                        if packmate.state == 'idle':
+                            packmate.state = 'chasing'
+
+            # Territorial bears only engage if player is close to territory center
+            if mob.type == 'bear' and nearest_dist > 8.0:
+                mob.state = 'idle'
+                mob.target_player_id = None
+                return
+
             # Line-of-sight check: mob can only detect/target through clear air
             has_los = world.has_line_of_sight(
                 mob.position[0], mob.position[1], mob.position[2],
@@ -3841,6 +4342,11 @@ class MobManager:
         mob = self.mobs.get(mob_id)
         if not mob:
             return False
+
+        # If passive mob is attacked, it starts fleeing
+        if mob.is_passive() and not mob.is_dead:
+            mob.state = 'fleeing'
+
         died = mob.take_damage(damage)
         
         # Send damage feedback to attacker
@@ -3914,13 +4420,13 @@ class NPC:
         
     def get_dialogue(self, player_id: str) -> Dict[str, Any]:
         """Get appropriate dialogue for player"""
-        # Simple dialogue system - can be expanded
         if player_id in self.dialogue_tree:
             return self.dialogue_tree[player_id]
+        if 'default' in self.dialogue_tree:
+            return self.dialogue_tree['default']
         return {
             'text': f"Hello, traveler! I am {self.name}.",
             'options': [
-                {'text': 'Tell me more.', 'next': 'more'},
                 {'text': 'Goodbye.', 'next': 'exit'}
             ]
         }

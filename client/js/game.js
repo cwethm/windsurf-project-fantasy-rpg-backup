@@ -267,6 +267,19 @@ const ITEM_TYPES = {
   STEW: 457,
   BREAD: 458,
   BERRY_MASH: 459,
+  HEALTH_POTION: 460,
+  MANA_POTION: 461,
+  SWIFT_TONIC: 462,
+  POWER_TONIC: 463,
+  PROTECTION_TONIC: 464,
+  SCROLL_FIREBOLT: 470,
+  SCROLL_FROST_NOVA: 471,
+  ENCHANTED_IRON_SWORD: 480,
+  ENCHANTED_LEATHER_CHESTPLATE: 481,
+  SOCKETED_GEM: 482,
+  RUBY_SHARD: 483,
+  SAPPHIRE_SHARD: 484,
+  EMERALD_SHARD: 485,
   // Weapons
   WOODEN_SWORD: 100,
   STONE_SWORD: 101,
@@ -539,7 +552,20 @@ const ITEM_NAMES = {
   220: 'Diamond Helmet',
   221: 'Diamond Chestplate',
   222: 'Diamond Leggings',
-  223: 'Diamond Boots'
+  223: 'Diamond Boots',
+  460: 'Health Potion',
+  461: 'Mana Potion',
+  462: 'Swift Tonic',
+  463: 'Power Tonic',
+  464: 'Protection Tonic',
+  470: 'Firebolt Scroll',
+  471: 'Frost Nova Scroll',
+  480: 'Enchanted Iron Sword',
+  481: 'Enchanted Leather Chestplate',
+  482: 'Socketed Gem',
+  483: 'Ruby Shard',
+  484: 'Sapphire Shard',
+  485: 'Emerald Shard'
 };
 
 const ITEM_COLORS = {
@@ -593,7 +619,20 @@ const ITEM_COLORS = {
   220: '#00FFFF', // Diamond Helmet - cyan
   221: '#00FFFF', // Diamond Chestplate - cyan
   222: '#00FFFF', // Diamond Leggings - cyan
-  223: '#00FFFF'  // Diamond Boots - cyan
+  223: '#00FFFF', // Diamond Boots - cyan
+  460: '#ff5e5e', // Health Potion
+  461: '#4d7fff', // Mana Potion
+  462: '#52d9ff', // Swift Tonic
+  463: '#ff9f43', // Power Tonic
+  464: '#8be37a', // Protection Tonic
+  470: '#ff7043', // Firebolt Scroll
+  471: '#80deea', // Frost Scroll
+  480: '#ffd54f', // Enchanted sword
+  481: '#f5c27f', // Enchanted armor
+  482: '#e1bee7', // Socketed gem
+  483: '#ef5350',
+  484: '#5c6bc0',
+  485: '#66bb6a'
 };
 
 // Crafting recipes database
@@ -877,6 +916,98 @@ const CRAFTING_RECIPES = [
   }
 ];
 
+CRAFTING_RECIPES.push(
+  {
+    id: 'health_potion',
+    result: { type: ITEM_TYPES.HEALTH_POTION, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.HERBAL_PASTE, count: 1 },
+      { type: ITEM_TYPES.BERRIES, count: 2 },
+      { type: ITEM_TYPES.GLASS_VIAL, count: 1 }
+    ]
+  },
+  {
+    id: 'mana_potion',
+    result: { type: ITEM_TYPES.MANA_POTION, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.HERB, count: 2 },
+      { type: ITEM_TYPES.MUSHROOM, count: 1 },
+      { type: ITEM_TYPES.GLASS_VIAL, count: 1 }
+    ]
+  },
+  {
+    id: 'swift_tonic',
+    result: { type: ITEM_TYPES.SWIFT_TONIC, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.HERB_TEA, count: 1 },
+      { type: ITEM_TYPES.ROOTS, count: 1 },
+      { type: ITEM_TYPES.GLASS_VIAL, count: 1 }
+    ]
+  },
+  {
+    id: 'power_tonic',
+    result: { type: ITEM_TYPES.POWER_TONIC, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.ROASTED_MEAT, count: 1 },
+      { type: ITEM_TYPES.FAT, count: 1 },
+      { type: ITEM_TYPES.GLASS_VIAL, count: 1 }
+    ]
+  },
+  {
+    id: 'protection_tonic',
+    result: { type: ITEM_TYPES.PROTECTION_TONIC, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.HERB, count: 2 },
+      { type: ITEM_TYPES.LEATHER, count: 1 },
+      { type: ITEM_TYPES.GLASS_VIAL, count: 1 }
+    ]
+  },
+  {
+    id: 'scroll_firebolt',
+    result: { type: ITEM_TYPES.SCROLL_FIREBOLT, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.PAPER, count: 1 },
+      { type: ITEM_TYPES.HERBAL_PASTE, count: 1 },
+      { type: ITEM_TYPES.CHARCOAL, count: 1 }
+    ]
+  },
+  {
+    id: 'scroll_frost_nova',
+    result: { type: ITEM_TYPES.SCROLL_FROST_NOVA, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.PAPER, count: 1 },
+      { type: ITEM_TYPES.MUSHROOM, count: 1 },
+      { type: ITEM_TYPES.WATER, count: 1 }
+    ]
+  },
+  {
+    id: 'socketed_gem',
+    result: { type: ITEM_TYPES.SOCKETED_GEM, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.GEM_SEAM, count: 1 },
+      { type: ITEM_TYPES.METAL_BAND, count: 1 }
+    ]
+  },
+  {
+    id: 'enchanted_iron_sword',
+    result: { type: ITEM_TYPES.ENCHANTED_IRON_SWORD, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.IRON_SWORD, count: 1 },
+      { type: ITEM_TYPES.SCROLL_FIREBOLT, count: 1 },
+      { type: ITEM_TYPES.SOCKETED_GEM, count: 1 }
+    ]
+  },
+  {
+    id: 'enchanted_leather_chestplate',
+    result: { type: ITEM_TYPES.ENCHANTED_LEATHER_CHESTPLATE, count: 1 },
+    ingredients: [
+      { type: ITEM_TYPES.LEATHER_CHESTPLATE, count: 1 },
+      { type: ITEM_TYPES.PROTECTION_TONIC, count: 1 },
+      { type: ITEM_TYPES.SOCKETED_GEM, count: 1 }
+    ]
+  }
+);
+
 // Equipment stats
 const EQUIPMENT_STATS = {
   // Weapons (damage)
@@ -939,8 +1070,10 @@ const MESSAGE_TYPES = {
   CHAT_WHISPER: 'chat_whisper',
   CHAT_SYSTEM: 'chat_system',
   DROP_ITEM: 'drop_item',
+  USE_ITEM: 'use_item',
   CRAFT_ITEM: 'craft_item',
   CRAFTING_RECIPE: 'crafting_recipe',
+  RECIPE_UNLOCK: 'recipe_unlock',
   EQUIP_ITEM: 'equip_item',
   UNEQUIP_ITEM: 'unequip_item',
   EQUIPMENT_UPDATE: 'equipment_update',
@@ -958,9 +1091,11 @@ const MESSAGE_TYPES = {
   NPC_SPAWN: 'npc_spawn',
   NPC_INTERACT: 'npc_interact',
   NPC_DIALOGUE: 'npc_dialogue',
+  NPC_DIALOGUE_RESPONSE: 'npc_dialogue_response',
   QUEST_ACCEPT: 'quest_accept',
   QUEST_PROGRESS: 'quest_progress',
   QUEST_COMPLETE: 'quest_complete',
+  WORLD_TIME: 'world_time',
   PLAYER_STATS: 'player_stats',
   PLAYER_LEVEL_UP: 'player_level_up',
   TOGGLE_DOOR: 'toggle_door',
@@ -1046,6 +1181,7 @@ class VoxelGame {
     // Death and respawn state
     this.isDead = false;
     this.respawnModal = null;
+    this.worldTime = 0;
     
     this.init();
   }
@@ -1060,6 +1196,14 @@ class VoxelGame {
     } catch (error) {
       console.error('Error during init:', error);
     }
+  }
+
+  useSelectedItem() {
+    if (!this.socket) return;
+    this.socket.send(JSON.stringify({
+      type: MESSAGE_TYPES.USE_ITEM,
+      data: { slot: this.inventory.selectedSlot }
+    }));
   }
   
   setupRespawnModal() {
@@ -1360,10 +1504,12 @@ class VoxelGame {
   setupLights() {
     // Ambient light
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    this.ambientLight = ambientLight;
     this.scene.add(ambientLight);
     
     // Directional light (sun)
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.directionalLight = directionalLight;
     directionalLight.position.set(50, 100, 50);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
@@ -1447,6 +1593,10 @@ class VoxelGame {
         return;
       }
       if (e.code === 'KeyR') {
+        this.useSelectedItem();
+        return;
+      }
+      if (e.code === 'KeyF') {
         this.interactWithNPC();
         return;
       }
@@ -1653,6 +1803,16 @@ class VoxelGame {
   }
 
   handleRightClickDown(event) {
+    // NPC interaction (right-click in proximity while aiming)
+    const npc = this.getNPCInCrosshair();
+    if (npc && this.socket) {
+      this.socket.send(JSON.stringify({
+        type: MESSAGE_TYPES.NPC_INTERACT,
+        data: { npc_id: npc.data.npc_id }
+      }));
+      return;
+    }
+
     // Check for mob interaction first (passive mobs can be clicked to follow)
     const enemyTarget = this.raycaster.getTargetEnemy(this.camera, this);
     if (enemyTarget && enemyTarget.enemy) {
@@ -1810,6 +1970,14 @@ class VoxelGame {
           this.addChatMessage(`Crafting failed: ${message.data.reason}`, 'system');
         }
         break;
+      case MESSAGE_TYPES.RECIPE_UNLOCK:
+        if (message.data && Array.isArray(message.data.recipes) && message.data.recipes.length > 0) {
+          this.addChatMessage(`New recipes unlocked: ${message.data.recipes.join(', ')}`, 'system');
+          if (this.crafting && this.crafting.panelOpen) {
+            this.crafting.renderRecipeList();
+          }
+        }
+        break;
       case MESSAGE_TYPES.NPC_SPAWN:
         console.log('Received NPC_SPAWN message:', message.data);
         this.spawnNPC(message.data);
@@ -1861,6 +2029,32 @@ class VoxelGame {
       case MESSAGE_TYPES.DOOR_STATE:
         this.handleDoorState(message.data);
         break;
+      case MESSAGE_TYPES.WORLD_TIME:
+        this.handleWorldTime(message.data);
+        break;
+    }
+  }
+
+  handleWorldTime(data) {
+    if (!data) return;
+    this.worldTime = data.time || 0;
+    if (!this.directionalLight || !this.ambientLight || !this.renderer) return;
+
+    const t = this.worldTime;
+    const sunFactor = Math.max(0.1, Math.sin(t * Math.PI * 2) * 0.5 + 0.5);
+    const isNight = !!data.isNight;
+
+    this.directionalLight.intensity = isNight ? 0.15 : 0.35 + sunFactor * 0.75;
+    this.ambientLight.intensity = isNight ? 0.18 : 0.35 + sunFactor * 0.35;
+
+    const daySky = new THREE.Color(0x87CEEB);
+    const nightSky = new THREE.Color(0x0f1528);
+    const blend = isNight ? 0.85 : Math.max(0, 1 - sunFactor);
+    const sky = daySky.clone().lerp(nightSky, blend * 0.7);
+
+    this.renderer.setClearColor(sky);
+    if (this.scene && this.scene.fog) {
+      this.scene.fog.color.copy(sky);
     }
   }
 
@@ -2607,6 +2801,10 @@ class VoxelGame {
   
   showNPCDialogue(data) {
     console.log('NPC Dialogue:', data);
+
+    if (this.activeDialogueBox && document.body.contains(this.activeDialogueBox)) {
+      document.body.removeChild(this.activeDialogueBox);
+    }
     
     // Create dialogue UI
     const dialogueBox = document.createElement('div');
@@ -2624,24 +2822,30 @@ class VoxelGame {
     `;
     
     document.body.appendChild(dialogueBox);
+    this.activeDialogueBox = dialogueBox;
     
     // Handle option clicks
-    dialogueBox.querySelectorAll('.dialogue-option').forEach(button => {
+    dialogueBox.querySelectorAll('.dialogue-option').forEach((button, optionIndex) => {
       button.addEventListener('click', () => {
-        const action = button.dataset.action;
-        const next = button.dataset.next;
-        const questId = button.dataset.quest;
-        
-        if (action === 'accept_quest' && questId) {
-          this.acceptQuest({ quest_id: questId });
+        if (this.socket) {
+          this.socket.send(JSON.stringify({
+            type: MESSAGE_TYPES.NPC_DIALOGUE_RESPONSE,
+            data: {
+              npc_id: data.npc_id,
+              option_index: optionIndex
+            }
+          }));
         }
-        
-        // Remove dialogue box
-        document.body.removeChild(dialogueBox);
-        
-        // Request pointer lock back
-        if (this.canvas.requestPointerLock) {
-          this.canvas.requestPointerLock();
+
+        if (button.dataset.next === 'exit') {
+          if (document.body.contains(dialogueBox)) {
+            document.body.removeChild(dialogueBox);
+          }
+          this.activeDialogueBox = null;
+
+          if (this.canvas.requestPointerLock) {
+            this.canvas.requestPointerLock();
+          }
         }
       });
     });
