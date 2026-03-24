@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "site_prefabs": {
+    "village": [
+      { "prefab_id": "village_well_square", "weight": 3, "tags": ["starter", "town_center"] },
+      { "prefab_id": "village_house_small", "weight": 2, "tags": ["residential"] }
+    ],
+    "fort": [
+      { "prefab_id": "fort_keep_small", "weight": 1, "tags": ["military", "defensible"] }
+    ],
+    "ruins": [
+      { "prefab_id": "ruins_circle", "weight": 3, "tags": ["ancient", "loot", "ring"] },
+      { "prefab_id": "ruins_gatehouse", "weight": 2, "tags": ["ancient", "loot", "gatehouse"] },
+      { "prefab_id": "ruins_sinkhole_spire", "weight": 1, "tags": ["ancient", "loot", "vertical", "sinkhole"] }
+    ],
+    "lair": [
+      { "prefab_id": "lair_stone_ring", "weight": 1, "tags": ["monster", "hazard"] }
+    ]
+  }
+}

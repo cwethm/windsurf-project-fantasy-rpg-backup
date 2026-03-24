@@ -12,7 +12,7 @@ A 3D voxel-based MMO game with real-time multiplayer, inventory system, containe
 
 ### Server
 ```bash
-cd /home/cweth/CascadeProjects/windsurf-project-2
+cd /home/cweth/CascadeProjects/windsurf-project-fantasy-rpg-backup
 source venv/bin/activate
 python3 server.py
 ```
@@ -73,11 +73,14 @@ Client runs on `http://localhost:8080`
 ### Inventory
 - **E**: Toggle inventory panel
 - **1-9**: Select quickbar slot
-- **Left click**: Pick up item / Place item
-- **Right click**: Place block / Open chest
+- **Left click**: Combat / mining
+- **Right click**: Context interaction (NPC talk, mob interact, door toggle, chest open, block place)
+
+### Interaction & Utility
+- **F**: Talk/interact with NPC in crosshair
+- **R**: Use selected consumable item
 
 ### Modes
-- **F**: Toggle Edit/Explore mode
 - **L**: Toggle item lock on/off
 - **V**: Toggle orbit camera (debug)
 - **Esc**: Close all panels
@@ -99,6 +102,12 @@ MOVE_ITEM: Move item between slots
 SELECT_QUICKBAR: Select quickbar slot
 TOGGLE_ITEM_LOCK: Toggle item lock
 COLLECT_ITEM: Collect item entity
+TOGGLE_DOOR: Toggle door state
+NPC_INTERACT: Start NPC dialogue
+NPC_DIALOGUE_RESPONSE: Choose dialogue option
+MOB_INTERACT: Interact with mob
+CRAFT_ITEM: Craft from recipe
+USE_ITEM: Use selected item
 
 // Server → Client
 GAME_STATE: Initial game state
@@ -111,6 +120,15 @@ INVENTORY_UPDATE: Inventory sync
 CONTAINER_DATA: Container contents
 SPAWN_ITEM_ENTITY: Spawn floating item
 ITEM_LOCK_STATUS: Lock status update
+DOOR_STATE: Door open/close sync
+NPC_SPAWN: Spawn NPC
+NPC_DIALOGUE: NPC dialogue payload
+QUEST_ACCEPT: Quest accepted
+QUEST_COMPLETE: Quest completed
+RECIPE_UNLOCK: Recipe bundle unlocked
+WORLD_TIME: Time-of-day sync
+PLAYER_STATS: Health/mana/xp/crafting stats
+PLAYER_LEVEL_UP: Level-up event
 ```
 
 ## Code Structure
@@ -228,7 +246,9 @@ Press V to enable orbit camera for debugging world generation and player positio
   - Metal processing (ingots, wire, bands, nails, rivets, chain links, bronze alloy)
   - Food & consumables (roasted meat, jerky, soup, porridge, stew, bread, berry mash, herb tea)
 - **RPG ingredients model**: Flat recipe list — combine ingredients to produce results, no material-property simulation
-- **Planned**: Skill tier gating (Apprentice/Journeyman/Master), NPC-taught recipes, potions, enchanting
+- **Crafting tiers implemented**: Apprentice/Journeyman/Master with crafting XP thresholds and tier-gated recipes
+- **Recipe unlock flow implemented**: NPC dialogue + quest rewards can unlock recipe bundles
+- **Consumables implemented**: Potions/food buffs and temporary status effects
 
 ### Container System
 - **Chests**: Random spawn in world (30% per chunk), loot generation
@@ -244,6 +264,7 @@ Press V to enable orbit camera for debugging world generation and player positio
 - **14 mob types**: zombie, skeleton, goblin, slime, spider, troll (hostile); deer, boar, sheep, cow, rabbit, wolf, bear, chicken (passive/defensive)
 - **Mob AI**: Idle wandering, player detection, chasing, attacking, target switching, aggro loss on player death
 - **Mob spawning**: Auto-spawn near players, max cap, despawn when far, corpse persistence (60s)
+- **Town safety rule**: Hostile mobs avoid settlement safe-radius zones around generated towns/sites
 - **Loot drops**: Per-mob weighted loot tables with variable counts
 - **Vox model rendering**: 13 .vox models loaded (bear, chicken, deer, dog, goblin, green_slime, lion, panther, rabbit, sheep, skeleton, villager, wolf, zombie)
 
@@ -251,6 +272,21 @@ Press V to enable orbit camera for debugging world generation and player positio
 - **NPC class**: Position, type, dialogue trees, quest giving
 - **Quest class**: Gather/craft/deliver task structure
 - **Message types**: NPC_SPAWN, NPC_INTERACT, NPC_DIALOGUE, QUEST_ACCEPT, QUEST_COMPLETE
+- **Town-based NPC spawning**: Core NPCs are anchored to generated town sites
+- **Dialogue progression**: Option selections flow through server-side dialogue state and actions
+
+---
+
+## Current Project State (March 2026)
+
+The codebase is currently in a **Phase 4 content pipeline state**:
+
+- World generation with sites, ruins, and loot tier system is implemented
+- Ruins loot generation with tiered rewards (ancient_common, ancient_guarded, ancient_relic) is live
+- Prefab system for site generation with room assembly is functional
+- Server-side validation and acceptance testing framework is in place
+- Player visibility and multiplayer synchronization issues have been resolved
+- Remaining work focuses on content expansion, testing coverage, and progression depth
 
 ### World Generation Layers
 - **base_height.py**: Terrain elevation with noise
@@ -264,7 +300,19 @@ Press V to enable orbit camera for debugging world generation and player positio
 
 ### Chat & Social
 - **Chat system**: Public messages, whispers, system messages
-- **Chat commands**: Server-side command processing
+- **Chat commands**: Server-side command processing with debug commands
+- **Debug commands**: `/ruinsloot [radius] [verbose]` for inspecting ruins loot
+
+### World Generation Content
+- **Sites system**: Ruins, villages, forts, lairs, monasteries, mines
+- **Ruins loot**: Tiered loot system with deterministic generation
+- **Prefab system**: Reusable schematics for buildings and dungeons
+- **Room assembly**: Modular interior generation with connector-based placement
+
+### Validation & Testing
+- **Acceptance testing**: Phase 4 validation framework for worldgen features
+- **Prefab validation**: Schema validation for prefabs and room schematics
+- **Bounded spiral scan**: Efficient ruins detection for testing
 
 ### Database & Persistence
 - **SQLite database**: Users, sessions, players, world_chunks, item_entities tables
@@ -281,6 +329,7 @@ Press V to enable orbit camera for debugging world generation and player positio
 ### Critical
 1. **Database NOT NULL constraint on player save**: `players.user_id` fails when saving players who joined without auth — disconnect triggers `Failed to save player: NOT NULL constraint failed: players.user_id`
 2. **Missing mob models**: `slime.vox`, `troll.vox`, `boar.vox`, `cow.vox` return 404 — these mobs render as fallback cubes
+3. **Site spawn threshold**: Site noise threshold was too high (0.85) for actual noise range, fixed to 0.45 for ~15% spawn rate
 
 ### Medium
 3. **Block type ID conflicts**: `PLANKS` exists as both block type 21 and item type 361; `SAND` as block 7 and item 348; `LEAVES` as block 5 and item 310 — potential lookup bugs
@@ -341,19 +390,34 @@ Press V to enable orbit camera for debugging world generation and player positio
 10. **Rate limiting**: Prevent WebSocket message flooding
 
 ### Phase 3 — Gameplay Polish
-11. **Crafting skill tiers**: Gate recipes behind Apprentice / Journeyman / Master crafting levels, earned via XP from crafting
-12. **RPG recipe expansion**: Add potions (health, mana, buff), scrolls, enchanted gear, and gemstone socketing recipes
-13. **Food as consumable buffs**: Food items grant temporary HP regen, speed boost, or damage boost — no hunger bar
-14. **NPC recipe vendors & quest rewards**: NPCs sell rare ingredients and teach new recipes on quest completion
-15. **Mob behavior refinement**: Passive animals flee, pack behavior for wolves, territorial bears
-16. **Day/night cycle**: Lighting changes, mob spawn rate variation
+11. ✅ **Crafting skill tiers**: Apprentice / Journeyman / Master gating with crafting XP
+12. ✅ **RPG recipe expansion**: Potions, scrolls, enchanted gear, socketing recipes added
+13. ✅ **Food as consumable buffs**: Temporary buffs implemented via use-item flow
+14. ✅ **NPC recipe vendors & quest rewards**: Dialogue actions + quest rewards unlock recipes
+15. ✅ **Mob behavior refinement**: Passive flee + wolf pack + bear territorial behavior
+16. ✅ **Day/night cycle**: World time broadcast and client lighting updates
+
+### Phase 4 — Content Pipeline & Worldgen Authoring (COMPLETE)
+17. ✅ **Human-authored VOX asset pipeline**: Contributor workflow for creating/validating/importing VOX textures and props
+18. ✅ **Building schematic format**: Define reusable building templates (town houses, shops, keeps, walls) for generator placement
+19. ✅ **Room schematic format**: Define room modules + connectors for dungeon/fortress interior assembly
+20. ✅ **Prefab metadata rules**: Tags for biome, faction, rarity, size, anchor points, door sockets, loot sockets, NPC spawn sockets
+21. ✅ **Generator integration layer**: Place authored schematics into towns, dungeons, and fortresses with deterministic seed controls
+22. ✅ **Contributor docs/tooling**: Validation scripts + example schema + authoring checklist for non-programmer creators
+
+### Phase 5 — Progression Expansion (Priority)
+23. **Equipment depth pass**: Broaden tools/armor/clothing tiers, stats, and visual identity
+24. **Gathering skill suite**: Woodcutting, mining, foraging, skinning, fishing, and related progression unlocks
+25. **Harvest node specialization**: Rich nodes, rare drops, and skill-gated gathering outcomes
+26. **Crafting-skill interplay**: Tie gathering quality/yield into crafting outcomes and recipe branches
+27. **NPC economy hooks**: Demand-based buying/selling tied to gathered and crafted goods
 
 ### Phase 4 — Advanced RPG Systems
-17. **Enchanting system**: Apply enchantments to gear via recipes using rare mob drops and gems
-18. **Alchemy system**: Combine herbs and monster parts into potions with tiered effects
-19. **NPC shop economy**: Buy/sell items with regional price variation and rare stock rotation
-20. **Quest-chain recipe unlocks**: Multi-step quest lines that unlock advanced recipe tiers
-21. **Guild crafting bonuses**: Fellowship/party buffs to crafting success rate or yield
+28. **Enchanting system**: Apply enchantments to gear via recipes using rare mob drops and gems
+29. **Alchemy system**: Combine herbs and monster parts into potions with tiered effects
+30. **NPC shop economy**: Buy/sell items with regional price variation and rare stock rotation
+31. **Quest-chain recipe unlocks**: Multi-step quest lines that unlock advanced recipe tiers
+32. **Guild crafting bonuses**: Fellowship/party buffs to crafting success rate or yield
 
 ---
 
@@ -362,8 +426,8 @@ Press V to enable orbit camera for debugging world generation and player positio
 1. **Performance**: Optimize chunk rendering for large worlds
 2. **Security**: Add validation for all client messages
 3. **Persistence**: Save world state to database
-4. **Creatures**: Add mob/NPC system with combat
-5. **Crafting**: Implement crafting system
+4. **Creatures**: Expand mob/NPC content variety and behavior depth
+5. **Crafting**: Expand progression and specialization systems
 6. **Building**: More block types and building mechanics
 
 ## Testing Multiplayer

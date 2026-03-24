@@ -1,0 +1,16 @@
+{
+  "id": "example_room_name",
+  "room_type": "hallway",
+  "theme": "fortress_stone",
+  "size": [9, 4, 9],
+  "origin": [4, 0, 4],
+  "blocks": [
+    { "x": 0, "y": 0, "z": 0, "id": 30 },
+    { "x": 1, "y": 0, "z": 0, "id": 30 }
+  ],
+  "connectors": [
+    { "x": 4, "y": 1, "z": 0, "direction": "north", "connector_type": "door" },
+    { "x": 4, "y": 1, "z": 8, "direction": "south", "connector_type": "door" }
+  ],
+  "tags": ["dungeon", "connector_room"]
+}

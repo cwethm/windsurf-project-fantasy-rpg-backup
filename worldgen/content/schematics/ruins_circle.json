@@ -1,0 +1,50 @@
+{
+  "id": "ruins_circle",
+  "category": "site",
+  "site_types": ["ruins"],
+  "size": [9, 4, 9],
+  "origin": [4, 0, 4],
+  "blocks": [
+    { "x": 4, "y": 0, "z": 0, "id": 30 },
+    { "x": 2, "y": 0, "z": 1, "id": 30 },
+    { "x": 3, "y": 0, "z": 1, "id": 30 },
+    { "x": 5, "y": 0, "z": 1, "id": 30 },
+    { "x": 6, "y": 0, "z": 1, "id": 30 },
+
+    { "x": 1, "y": 0, "z": 2, "id": 30 },
+    { "x": 7, "y": 0, "z": 2, "id": 30 },
+    { "x": 1, "y": 0, "z": 3, "id": 30 },
+    { "x": 7, "y": 0, "z": 3, "id": 30 },
+
+    { "x": 0, "y": 0, "z": 4, "id": 30 },
+    { "x": 8, "y": 0, "z": 4, "id": 30 },
+
+    { "x": 1, "y": 0, "z": 5, "id": 30 },
+    { "x": 7, "y": 0, "z": 5, "id": 30 },
+    { "x": 1, "y": 0, "z": 6, "id": 30 },
+    { "x": 7, "y": 0, "z": 6, "id": 30 },
+
+    { "x": 2, "y": 0, "z": 7, "id": 30 },
+    { "x": 3, "y": 0, "z": 7, "id": 30 },
+    { "x": 5, "y": 0, "z": 7, "id": 30 },
+    { "x": 6, "y": 0, "z": 7, "id": 30 },
+    { "x": 4, "y": 0, "z": 8, "id": 30 },
+
+    { "x": 2, "y": 1, "z": 1, "id": 30 },
+    { "x": 6, "y": 1, "z": 1, "id": 30 },
+    { "x": 1, "y": 1, "z": 6, "id": 30 },
+    { "x": 7, "y": 1, "z": 2, "id": 30 }
+  ],
+  "room_assembly": {
+    "room_ids": [
+      "ruins_room_hub",
+      "ruins_room_hall",
+      "ruins_room_chamber",
+      "ruins_room_stairs"
+    ],
+    "start_room_id": "ruins_room_hub",
+    "room_count": 3,
+    "connector_types": ["hall", "door", "stairs"]
+  },
+  "tags": ["ancient", "loot"]
+}

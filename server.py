@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import math
@@ -923,6 +924,38 @@ MOB_STATS = {
                            {'type': ITEM_TYPES['EGGS'],        'weight': 30, 'count': (1,2)}]},
 }
 
+RUINS_LOOT_ROLLS = {
+    'ancient_common': 2,
+    'ancient_guarded': 3,
+    'ancient_relic': 4,
+}
+
+RUINS_LOOT_TABLES = {
+    'ancient_common': [
+        {'type': ITEM_TYPES['COAL'], 'weight': 35, 'count': (1, 4)},
+        {'type': ITEM_TYPES['STONE'], 'weight': 30, 'count': (2, 6)},
+        {'type': ITEM_TYPES['IRON_INGOT'], 'weight': 18, 'count': (1, 2)},
+        {'type': ITEM_TYPES['BREAD'], 'weight': 12, 'count': (1, 2)},
+        {'type': ITEM_TYPES['HEALTH_POTION'], 'weight': 5, 'count': (1, 1)},
+    ],
+    'ancient_guarded': [
+        {'type': ITEM_TYPES['IRON_INGOT'], 'weight': 30, 'count': (1, 3)},
+        {'type': ITEM_TYPES['GOLD_INGOT'], 'weight': 20, 'count': (1, 2)},
+        {'type': ITEM_TYPES['HEALTH_POTION'], 'weight': 18, 'count': (1, 2)},
+        {'type': ITEM_TYPES['SCROLL_FIREBOLT'], 'weight': 12, 'count': (1, 1)},
+        {'type': ITEM_TYPES['DIAMOND'], 'weight': 10, 'count': (1, 1)},
+        {'type': ITEM_TYPES['SOCKETED_GEM'], 'weight': 10, 'count': (1, 1)},
+    ],
+    'ancient_relic': [
+        {'type': ITEM_TYPES['GOLD_INGOT'], 'weight': 28, 'count': (1, 3)},
+        {'type': ITEM_TYPES['DIAMOND'], 'weight': 20, 'count': (1, 2)},
+        {'type': ITEM_TYPES['SOCKETED_GEM'], 'weight': 20, 'count': (1, 1)},
+        {'type': ITEM_TYPES['SCROLL_FIREBOLT'], 'weight': 16, 'count': (1, 2)},
+        {'type': ITEM_TYPES['ENCHANTED_IRON_SWORD'], 'weight': 8, 'count': (1, 1)},
+        {'type': ITEM_TYPES['ENCHANTED_LEATHER_CHESTPLATE'], 'weight': 8, 'count': (1, 1)},
+    ],
+}
+
 class Player:
     def __init__(self, username: str, player_id: str):
         self.id = player_id
@@ -1330,6 +1363,7 @@ class World:
         self.chunks = {}
         self.dirty_chunks = set()  # Track chunks modified since last save
         self.containers = {}  # position string -> Container
+        self.ruins_loot_containers = {}  # position string -> ruins loot metadata
         self.item_entities = {}  # position string -> {type, harvester_id, spawn_time}
         self.town_sites: Dict[str, Dict[str, Any]] = {}  # site_id -> town site metadata
         self.db = db
@@ -1359,12 +1393,193 @@ class World:
                     'z': int(getattr(site, 'z', chunk_z * CHUNK_SIZE + CHUNK_SIZE // 2)),
                     'radius': int(getattr(site, 'radius', 24) or 24),
                 }
+
+        self._apply_spawn_marker_loot(chunk_x, chunk_z, result)
         
         # Worldgen block IDs already match shared/constants.py BLOCK_TYPES.
         # No conversion needed - just store and return directly.
         chunk_key = f"{chunk_x},{chunk_z}"
         self.chunks[chunk_key] = result.blocks
         return result.blocks
+
+    def _apply_spawn_marker_loot(self, chunk_x: int, chunk_z: int, result):
+        markers = result.spawn_markers if isinstance(result.spawn_markers, list) else []
+        for marker in markers:
+            if not isinstance(marker, dict):
+                continue
+            if marker.get('type') != 'ruins':
+                continue
+            self._populate_ruins_loot_container(chunk_x, chunk_z, result.blocks, marker)
+
+    def _populate_ruins_loot_container(
+        self,
+        chunk_x: int,
+        chunk_z: int,
+        chunk_blocks: List[int],
+        marker: Dict[str, Any],
+    ):
+        try:
+            local_x = int(marker.get('x', CHUNK_SIZE // 2))
+            local_y = int(marker.get('y', 1))
+            local_z = int(marker.get('z', CHUNK_SIZE // 2))
+        except (TypeError, ValueError):
+            return
+
+        if not (0 <= local_x < CHUNK_SIZE and 0 <= local_z < CHUNK_SIZE and 0 <= local_y < CHUNK_HEIGHT):
+            return
+
+        chest_y = local_y
+        chest_idx = self.get_block_index(local_x, chest_y, local_z)
+        if chunk_blocks[chest_idx] != BLOCK_TYPES['AIR']:
+            alt_y = local_y + 1
+            if alt_y >= CHUNK_HEIGHT:
+                return
+            alt_idx = self.get_block_index(local_x, alt_y, local_z)
+            if chunk_blocks[alt_idx] != BLOCK_TYPES['AIR']:
+                return
+            chest_y = alt_y
+            chest_idx = alt_idx
+
+        world_x = chunk_x * CHUNK_SIZE + local_x
+        world_z = chunk_z * CHUNK_SIZE + local_z
+        container_key = f"{world_x},{chest_y},{world_z}"
+
+        loot_tier = marker.get('loot_tier', 'ancient_common')
+        if not isinstance(loot_tier, str):
+            loot_tier = 'ancient_common'
+
+        site_id = marker.get('site_id', '')
+        prefab_id = marker.get('prefab_id', '')
+        self.ruins_loot_containers[container_key] = {
+            'x': world_x,
+            'y': chest_y,
+            'z': world_z,
+            'loot_tier': loot_tier,
+            'site_id': site_id,
+            'prefab_id': prefab_id,
+        }
+
+        if container_key in self.containers:
+            existing = self.containers[container_key]
+            if any(slot is not None for slot in existing.slots):
+                return
+            container = existing
+        else:
+            container = Container(world_x, chest_y, world_z)
+            self.containers[container_key] = container
+
+        chunk_blocks[chest_idx] = BLOCK_TYPES['CHEST']
+        seed_key = f"ruins_loot:{chunk_x}:{chunk_z}:{site_id}:{prefab_id}:{loot_tier}"
+        rng = random.Random(self._stable_seed(seed_key))
+        self._fill_ruins_container(container, loot_tier, rng)
+
+    def _fill_ruins_container(self, container: Container, loot_tier: str, rng: random.Random):
+        table = RUINS_LOOT_TABLES.get(loot_tier, RUINS_LOOT_TABLES['ancient_common'])
+        rolls = RUINS_LOOT_ROLLS.get(loot_tier, RUINS_LOOT_ROLLS['ancient_common'])
+        for _ in range(rolls):
+            entry = self._choose_weighted_loot_entry(table, rng)
+            if not entry:
+                continue
+            count_min, count_max = entry.get('count', (1, 1))
+            try:
+                item_count = rng.randint(int(count_min), int(count_max))
+            except (TypeError, ValueError):
+                item_count = 1
+            item_count = max(1, item_count)
+            container.add_loot(entry['type'], item_count)
+
+    @staticmethod
+    def _choose_weighted_loot_entry(table: List[Dict[str, Any]], rng: random.Random) -> Optional[Dict[str, Any]]:
+        weighted = [entry for entry in table if isinstance(entry, dict) and entry.get('weight', 0) > 0]
+        if not weighted:
+            return None
+
+        total_weight = sum(int(entry['weight']) for entry in weighted)
+        if total_weight <= 0:
+            return None
+
+        pick = rng.uniform(0, total_weight)
+        running = 0.0
+        for entry in weighted:
+            running += int(entry['weight'])
+            if pick <= running:
+                return entry
+        return weighted[-1]
+
+    @staticmethod
+    def _stable_seed(seed_key: str) -> int:
+        digest = hashlib.sha256(seed_key.encode('utf-8')).hexdigest()
+        return int(digest[:16], 16)
+
+    def get_ruins_loot_debug_entries(
+        self,
+        center_x: int,
+        center_y: int,
+        center_z: int,
+        radius: int = 64,
+        limit: int = 8,
+    ) -> List[Dict[str, Any]]:
+        try:
+            radius = max(1, int(radius))
+        except (TypeError, ValueError):
+            radius = 64
+
+        try:
+            limit = max(1, int(limit))
+        except (TypeError, ValueError):
+            limit = 8
+
+        radius_sq = radius * radius
+        entries: List[Dict[str, Any]] = []
+
+        for container_key, metadata in self.ruins_loot_containers.items():
+            if not isinstance(metadata, dict):
+                continue
+            container = self.containers.get(container_key)
+            if container is None:
+                continue
+
+            try:
+                x = int(metadata.get('x'))
+                y = int(metadata.get('y'))
+                z = int(metadata.get('z'))
+            except (TypeError, ValueError):
+                continue
+
+            dx = x - center_x
+            dz = z - center_z
+            distance_sq = dx * dx + dz * dz
+            if distance_sq > radius_sq:
+                continue
+
+            item_counts: Dict[int, int] = {}
+            for slot in container.slots:
+                if not isinstance(slot, dict):
+                    continue
+                item_type = slot.get('type')
+                count = slot.get('count', 0)
+                if not isinstance(item_type, int):
+                    continue
+                try:
+                    count_value = max(1, int(count))
+                except (TypeError, ValueError):
+                    count_value = 1
+                item_counts[item_type] = item_counts.get(item_type, 0) + count_value
+
+            entries.append({
+                'x': x,
+                'y': y,
+                'z': z,
+                'vertical_offset': y - center_y,
+                'distance_sq': distance_sq,
+                'loot_tier': metadata.get('loot_tier', 'unknown'),
+                'site_id': metadata.get('site_id', ''),
+                'prefab_id': metadata.get('prefab_id', ''),
+                'items': item_counts,
+            })
+
+        entries.sort(key=lambda entry: entry['distance_sq'])
+        return entries[:limit]
 
     def get_town_sites(self) -> List[Dict[str, Any]]:
         return list(self.town_sites.values())
@@ -2668,7 +2883,8 @@ class VoxelServer:
                 "/help - Show this help\n"
                 "/whisper <player> <message> - Send private message\n"
                 "/who - List online players\n"
-                "/msg <player> <message> - Alias for whisper"
+                "/msg <player> <message> - Alias for whisper\n"
+                "/ruinsloot [radius] [verbose] - Show nearby ruins chest loot"
             )
             await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
                 'message': help_text
@@ -2723,11 +2939,87 @@ class VoxelServer:
             await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
                 'message': players_list
             })
+
+        elif cmd == '/ruinsloot':
+            radius = 64
+            verbose = False
+            radius_set = False
+            for arg in parts[1:]:
+                lowered = arg.lower()
+                if lowered in {'verbose', 'v'}:
+                    verbose = True
+                    continue
+
+                if radius_set:
+                    await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                        'message': 'Usage: /ruinsloot [radius] [verbose]'
+                    })
+                    return
+
+                try:
+                    radius = int(arg)
+                except (TypeError, ValueError):
+                    await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                        'message': 'Usage: /ruinsloot [radius] [verbose]'
+                    })
+                    return
+                radius_set = True
+
+            radius = max(8, min(radius, 256))
+            await self._send_ruins_loot_debug(client_id, player, radius, verbose=verbose)
         
         else:
             await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
                 'message': f'Unknown command: {cmd}. Type /help for commands.'
             })
+
+    async def _send_ruins_loot_debug(self, client_id: str, player: Player, radius: int, verbose: bool = False):
+        px = int(player.position[0])
+        py = int(player.position[1])
+        pz = int(player.position[2])
+
+        entries = self.world.get_ruins_loot_debug_entries(px, py, pz, radius=radius, limit=8)
+        if not entries:
+            await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+                'message': f'No tracked ruins chests within {radius} blocks.'
+            })
+            return
+
+        detail_label = 'verbose' if verbose else 'summary'
+        lines = [f'Nearby ruins chests ({len(entries)} within {radius} blocks, {detail_label}):']
+        for entry in entries:
+            distance = math.sqrt(entry['distance_sq'])
+            max_items = 99 if verbose else 5
+            loot_summary = self._format_ruins_loot_summary(entry.get('items', {}), max_items=max_items)
+            prefab_id = entry.get('prefab_id') or 'unknown_prefab'
+            if verbose:
+                site_id = entry.get('site_id') or 'unknown_site'
+                lines.append(
+                    f"- tier={entry.get('loot_tier', 'unknown')} pos=({entry['x']},{entry['y']},{entry['z']}) "
+                    f"d={distance:.1f} dy={entry.get('vertical_offset', 0)} prefab={prefab_id} site={site_id} loot={loot_summary}"
+                )
+            else:
+                lines.append(
+                    f"- {entry.get('loot_tier', 'unknown')} @ ({entry['x']},{entry['y']},{entry['z']}) "
+                    f"d={distance:.1f} prefab={prefab_id} loot={loot_summary}"
+                )
+
+        await self.send_to_client(client_id, MESSAGE_TYPES['CHAT_SYSTEM'], {
+            'message': '\n'.join(lines)
+        })
+
+    @staticmethod
+    def _format_ruins_loot_summary(items: Dict[int, int], max_items: int = 5) -> str:
+        if not items:
+            return 'empty'
+
+        sorted_items = sorted(items.items(), key=lambda entry: entry[1], reverse=True)
+        parts = [
+            f"{count}x {ITEM_NAMES.get(item_type, f'Item {item_type}')}" for item_type, count in sorted_items[:max_items]
+        ]
+        if len(sorted_items) > max_items:
+            parts.append(f"+{len(sorted_items) - max_items} more")
+        return ', '.join(parts)
     
     async def handle_drop_item(self, client_id: str, data: Dict[str, Any]):
         """Handle dropping items from inventory"""

@@ -9,6 +9,8 @@ from typing import Dict, Any, List, Tuple
 from ..noise import NoiseGenerator
 from ..coords import WorldSeed
 from ..models.chunk_context import ChunkContext, ChunkGenerationResult, RegionRecord, SiteRecord, SiteType, BiomeType
+from ..placement.prefab_library import PrefabLibrary
+from ..placement.room_assembler import RoomAssembler
 
 
 class SiteGenerationLayer:
@@ -18,6 +20,8 @@ class SiteGenerationLayer:
         self.seed = world_seed.get_layer_seed("sites")
         self.noise = NoiseGenerator(self.seed)
         self.site_noise = NoiseGenerator(self.seed + 1000)
+        self.prefab_library = PrefabLibrary()
+        self.room_assembler = RoomAssembler(self.prefab_library)
         
         # Site requirements by type
         self.site_requirements = {
@@ -127,7 +131,7 @@ class SiteGenerationLayer:
         )
         
         # Check if this chunk should have a site
-        if site_noise > 0.85:  # 15% chance
+        if site_noise > 0.45:  # ~15% chance based on noise distribution
             # Determine site type based on biome
             biome = context.biome.primary_biome
             
@@ -247,6 +251,9 @@ class SiteGenerationLayer:
         
         # Update site Y position
         site.y = site_y
+
+        if self._generate_from_prefab(context, result, site_x, site_y, site_z, site):
+            return
         
         # Generate based on site type
         if site.site_type == SiteType.VILLAGE:
@@ -260,6 +267,167 @@ class SiteGenerationLayer:
         else:
             # Simple structure for other types
             self._generate_simple_structure(site_x, site_y, site_z, site, result)
+
+    def _generate_from_prefab(
+        self,
+        context: ChunkContext,
+        result: ChunkGenerationResult,
+        x: int,
+        y: int,
+        z: int,
+        site: SiteRecord,
+    ) -> bool:
+        site_type_name = site.site_type.value
+        seed_key = f"{context.world_seed}:{context.chunk_x}:{context.chunk_z}:{site.site_id}:{site_type_name}"
+        prefab_id = self.prefab_library.choose_site_prefab_id(site_type_name, seed_key)
+        if not prefab_id:
+            return False
+
+        schematic = self.prefab_library.get_schematic(prefab_id)
+        if not schematic:
+            return False
+
+        if not self._place_schematic(result, x, y, z, schematic):
+            return False
+
+        site.structures.append({
+            'type': 'prefab',
+            'prefab_id': prefab_id,
+            'site_type': site_type_name,
+            'chunk_x': context.chunk_x,
+            'chunk_z': context.chunk_z,
+        })
+
+        room_assembly = schematic.get('room_assembly')
+        if isinstance(room_assembly, dict):
+            room_seed_key = f"{seed_key}:room_assembly"
+            room_placements = self.room_assembler.assemble(
+                result=result,
+                anchor_x=x,
+                anchor_y=y,
+                anchor_z=z,
+                room_assembly=room_assembly,
+                seed_key=room_seed_key,
+                place_schematic=self._place_schematic,
+            )
+            if room_placements:
+                site.structures.append({
+                    'type': 'room_assembly',
+                    'prefab_id': prefab_id,
+                    'rooms': room_placements,
+                })
+
+        self._add_site_spawn_marker(site_type_name, x, y, z, site, result, prefab_id)
+        return True
+
+    def _place_schematic(self, result: ChunkGenerationResult, x: int, y: int, z: int, schematic: Dict[str, Any]) -> bool:
+        origin = schematic.get('origin', [0, 0, 0])
+        blocks = schematic.get('blocks', [])
+
+        if not isinstance(origin, list) or len(origin) != 3 or not isinstance(blocks, list):
+            return False
+
+        try:
+            ox, oy, oz = int(origin[0]), int(origin[1]), int(origin[2])
+        except (TypeError, ValueError):
+            return False
+
+        base_x = x - ox
+        base_y = y - oy
+        base_z = z - oz
+        chunk_size = 16
+        chunk_height = 64
+        placed_any = False
+
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+
+            try:
+                bx = int(block.get('x', 0))
+                by = int(block.get('y', 0))
+                bz = int(block.get('z', 0))
+                block_id = int(block.get('id', 0))
+            except (TypeError, ValueError):
+                continue
+
+            world_x = base_x + bx
+            world_y = base_y + by
+            world_z = base_z + bz
+
+            if not (0 <= world_x < chunk_size and 0 <= world_y < chunk_height and 0 <= world_z < chunk_size):
+                continue
+
+            if block_id == 0:
+                continue
+
+            block_idx = world_x + world_z * chunk_size + world_y * chunk_size * chunk_size
+            result.blocks[block_idx] = block_id
+            placed_any = True
+
+        return placed_any
+
+    def _add_site_spawn_marker(
+        self,
+        site_type: str,
+        x: int,
+        y: int,
+        z: int,
+        site: SiteRecord,
+        result: ChunkGenerationResult,
+        prefab_id: str,
+    ):
+        if site_type == 'village':
+            result.spawn_markers.append({
+                'type': 'village',
+                'site_id': site.site_id,
+                'x': x,
+                'y': y,
+                'z': z,
+                'npc_types': site.population_roles,
+                'faction': site.faction,
+                'prefab_id': prefab_id,
+            })
+            return
+
+        if site_type == 'fort':
+            result.spawn_markers.append({
+                'type': 'fort',
+                'site_id': site.site_id,
+                'x': x,
+                'y': y,
+                'z': z,
+                'npc_types': site.population_roles,
+                'faction': site.faction,
+                'prefab_id': prefab_id,
+            })
+            return
+
+        if site_type == 'ruins':
+            loot_tier = self._get_ruins_loot_tier(prefab_id)
+            result.spawn_markers.append({
+                'type': 'ruins',
+                'site_id': site.site_id,
+                'x': x,
+                'y': y,
+                'z': z,
+                'loot_tier': loot_tier,
+                'monster_type': 'undead',
+                'prefab_id': prefab_id,
+            })
+            return
+
+        if site_type == 'lair':
+            result.spawn_markers.append({
+                'type': 'lair',
+                'site_id': site.site_id,
+                'x': x,
+                'y': y - 1,
+                'z': z,
+                'monster_type': self._get_lair_monster_type(site),
+                'spawn_count': random.randint(3, 8),
+                'prefab_id': prefab_id,
+            })
     
     def _generate_village(self, x: int, y: int, z: int, site: SiteRecord, result: ChunkGenerationResult):
         """Generate a village with multiple buildings."""
@@ -357,9 +525,16 @@ class SiteGenerationLayer:
             'x': x,
             'y': y,
             'z': z,
-            'loot_tier': 'ancient',
+            'loot_tier': self._get_ruins_loot_tier('procedural_ruins'),
             'monster_type': 'undead'
         })
+
+    def _get_ruins_loot_tier(self, prefab_id: str) -> str:
+        if prefab_id == 'ruins_sinkhole_spire':
+            return 'ancient_relic'
+        if prefab_id == 'ruins_gatehouse':
+            return 'ancient_guarded'
+        return 'ancient_common'
     
     def _generate_fort(self, x: int, y: int, z: int, site: SiteRecord, result: ChunkGenerationResult):
         """Generate a fort with walls and towers."""

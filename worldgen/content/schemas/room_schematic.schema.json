@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voxel-mmo.local/schemas/room_schematic.schema.json",
+  "title": "Room Schematic",
+  "type": "object",
+  "required": ["id", "origin", "blocks", "connectors"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "room_type": { "type": "string" },
+    "theme": { "type": "string" },
+    "origin": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "integer" }
+    },
+    "size": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "integer", "minimum": 1 }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "z", "id"],
+        "properties": {
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "z": { "type": "integer" },
+          "id": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "z", "direction", "connector_type"],
+        "properties": {
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "z": { "type": "integer" },
+          "direction": { "type": "string", "enum": ["north", "south", "east", "west", "up", "down"] },
+          "connector_type": { "type": "string", "enum": ["door", "hall", "stairs", "arch"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

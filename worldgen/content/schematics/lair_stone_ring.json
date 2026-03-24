@@ -1,0 +1,32 @@
+{
+  "id": "lair_stone_ring",
+  "category": "site",
+  "site_types": ["lair"],
+  "size": [7, 3, 7],
+  "origin": [3, 0, 3],
+  "blocks": [
+    { "x": 3, "y": 0, "z": 0, "id": 3 },
+    { "x": 1, "y": 0, "z": 1, "id": 3 },
+    { "x": 2, "y": 0, "z": 1, "id": 3 },
+    { "x": 4, "y": 0, "z": 1, "id": 3 },
+    { "x": 5, "y": 0, "z": 1, "id": 3 },
+
+    { "x": 0, "y": 0, "z": 3, "id": 3 },
+    { "x": 6, "y": 0, "z": 3, "id": 3 },
+
+    { "x": 1, "y": 0, "z": 5, "id": 3 },
+    { "x": 2, "y": 0, "z": 5, "id": 3 },
+    { "x": 4, "y": 0, "z": 5, "id": 3 },
+    { "x": 5, "y": 0, "z": 5, "id": 3 },
+    { "x": 3, "y": 0, "z": 6, "id": 3 },
+
+    { "x": 3, "y": 0, "z": 3, "id": 0 },
+    { "x": 3, "y": 1, "z": 3, "id": 0 }
+  ],
+  "room_assembly": {
+    "room_ids": ["lair_room_den", "lair_room_nest"],
+    "room_count": 2,
+    "connector_type": "door"
+  },
+  "tags": ["monster", "hazard"]
+}

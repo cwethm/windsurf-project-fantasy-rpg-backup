@@ -1,0 +1,37 @@
+{
+  "id": "ruins_room_stairs",
+  "category": "room",
+  "room_type": "stairs",
+  "theme": "ruins_ancient",
+  "size": [5, 5, 5],
+  "origin": [2, 1, 2],
+  "blocks": [
+    { "x": 0, "y": 0, "z": 0, "id": 30 },
+    { "x": 1, "y": 0, "z": 0, "id": 30 },
+    { "x": 2, "y": 0, "z": 0, "id": 30 },
+    { "x": 3, "y": 0, "z": 0, "id": 30 },
+    { "x": 4, "y": 0, "z": 0, "id": 30 },
+    { "x": 0, "y": 0, "z": 1, "id": 30 },
+    { "x": 4, "y": 0, "z": 1, "id": 30 },
+    { "x": 0, "y": 0, "z": 2, "id": 30 },
+    { "x": 4, "y": 0, "z": 2, "id": 30 },
+    { "x": 0, "y": 0, "z": 3, "id": 30 },
+    { "x": 4, "y": 0, "z": 3, "id": 30 },
+    { "x": 0, "y": 0, "z": 4, "id": 30 },
+    { "x": 1, "y": 0, "z": 4, "id": 30 },
+    { "x": 2, "y": 0, "z": 4, "id": 30 },
+    { "x": 3, "y": 0, "z": 4, "id": 30 },
+    { "x": 4, "y": 0, "z": 4, "id": 30 },
+
+    { "x": 2, "y": 0, "z": 2, "id": 0 },
+    { "x": 2, "y": 1, "z": 2, "id": 0 },
+    { "x": 2, "y": 2, "z": 2, "id": 0 }
+  ],
+  "connectors": [
+    { "x": 2, "y": 1, "z": 0, "direction": "north", "connector_type": "hall" },
+    { "x": 2, "y": 1, "z": 4, "direction": "south", "connector_type": "hall" },
+    { "x": 2, "y": 1, "z": 2, "direction": "up", "connector_type": "stairs" },
+    { "x": 2, "y": 1, "z": 2, "direction": "down", "connector_type": "stairs" }
+  ],
+  "tags": ["ruins", "dungeon", "stairs"]
+}

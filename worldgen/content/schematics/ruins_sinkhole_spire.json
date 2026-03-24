@@ -1,0 +1,55 @@
+{
+  "id": "ruins_sinkhole_spire",
+  "category": "site",
+  "site_types": ["ruins"],
+  "size": [11, 8, 11],
+  "origin": [5, 0, 5],
+  "blocks": [
+    { "x": 3, "y": 0, "z": 3, "id": 30 },
+    { "x": 4, "y": 0, "z": 3, "id": 30 },
+    { "x": 5, "y": 0, "z": 3, "id": 30 },
+    { "x": 6, "y": 0, "z": 3, "id": 30 },
+    { "x": 7, "y": 0, "z": 3, "id": 30 },
+
+    { "x": 3, "y": 0, "z": 4, "id": 30 },
+    { "x": 7, "y": 0, "z": 4, "id": 30 },
+    { "x": 3, "y": 0, "z": 5, "id": 30 },
+    { "x": 7, "y": 0, "z": 5, "id": 30 },
+    { "x": 3, "y": 0, "z": 6, "id": 30 },
+    { "x": 7, "y": 0, "z": 6, "id": 30 },
+
+    { "x": 3, "y": 0, "z": 7, "id": 30 },
+    { "x": 4, "y": 0, "z": 7, "id": 30 },
+    { "x": 5, "y": 0, "z": 7, "id": 30 },
+    { "x": 6, "y": 0, "z": 7, "id": 30 },
+    { "x": 7, "y": 0, "z": 7, "id": 30 },
+
+    { "x": 3, "y": 1, "z": 3, "id": 30 },
+    { "x": 7, "y": 1, "z": 3, "id": 30 },
+    { "x": 3, "y": 1, "z": 7, "id": 30 },
+    { "x": 7, "y": 1, "z": 7, "id": 30 },
+
+    { "x": 4, "y": 1, "z": 2, "id": 30 },
+    { "x": 5, "y": 1, "z": 2, "id": 30 },
+    { "x": 6, "y": 1, "z": 2, "id": 30 },
+    { "x": 4, "y": 1, "z": 8, "id": 30 },
+    { "x": 5, "y": 1, "z": 8, "id": 30 },
+    { "x": 6, "y": 1, "z": 8, "id": 30 },
+
+    { "x": 5, "y": 0, "z": 5, "id": 0 },
+    { "x": 5, "y": 1, "z": 5, "id": 0 },
+    { "x": 5, "y": 2, "z": 5, "id": 0 }
+  ],
+  "room_assembly": {
+    "room_ids": [
+      "ruins_room_hub",
+      "ruins_room_hall",
+      "ruins_room_chamber",
+      "ruins_room_stairs"
+    ],
+    "start_room_id": "ruins_room_stairs",
+    "room_count": 5,
+    "connector_types": ["stairs", "hall", "door"]
+  },
+  "tags": ["ancient", "loot", "vertical", "sinkhole", "spire"]
+}

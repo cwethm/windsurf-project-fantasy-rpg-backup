@@ -1,0 +1,19 @@
+{
+  "id": "example_building_name",
+  "category": "building",
+  "site_types": ["village"],
+  "size": [7, 5, 7],
+  "origin": [3, 0, 3],
+  "blocks": [
+    { "x": 0, "y": 0, "z": 0, "id": 30 },
+    { "x": 1, "y": 0, "z": 0, "id": 30 },
+    { "x": 2, "y": 0, "z": 0, "id": 30 }
+  ],
+  "tags": ["starter", "residential"],
+  "metadata": {
+    "biomes": ["plains", "forest"],
+    "factions": ["river_union"],
+    "rarity": "common",
+    "author": "your_name"
+  }
+}
