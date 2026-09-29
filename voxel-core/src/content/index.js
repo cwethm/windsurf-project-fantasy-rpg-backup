@@ -10,17 +10,19 @@
 import { createBlockRegistry, BLOCK_IDS, TOOL_CLASSES } from './blocks.js';
 import { createItemRegistry, USE_ACTIONS } from './items.js';
 import { createLootRegistry, rollLootTable } from './loot.js';
+import { createBiomeRegistry, selectBiome } from './biomes.js';
 
-export { BLOCK_IDS, TOOL_CLASSES, USE_ACTIONS, rollLootTable };
+export { BLOCK_IDS, TOOL_CLASSES, USE_ACTIONS, rollLootTable, selectBiome };
 
 export class Content {
   /**
-   * @param {{ blocks?: object[], items?: object[], loot?: object[] }} [extra]
+   * @param {{ blocks?: object[], items?: object[], loot?: object[], biomes?: object[] }} [extra]
    */
   constructor(extra = {}) {
     this.blocks = createBlockRegistry(extra.blocks ?? []);
     this.items = createItemRegistry(extra.items ?? []);
     this.loot = createLootRegistry(extra.loot ?? []);
+    this.biomes = createBiomeRegistry(extra.biomes ?? []);
     this._rebuildIndexes();
   }
 
@@ -49,6 +51,18 @@ export class Content {
         }
       }
     }
+    for (const biomeDef of this.biomes.all()) {
+      for (const blockName of [biomeDef.surface, biomeDef.subsurface]) {
+        if (!this.blocks.getByName(blockName)) {
+          throw new Error(`biome "${biomeDef.id}" references unknown block "${blockName}"`);
+        }
+      }
+      for (const flora of biomeDef.flora) {
+        if (!this.blocks.getByName(flora.block)) {
+          throw new Error(`biome "${biomeDef.id}" plants unknown block "${flora.block}"`);
+        }
+      }
+    }
   }
 
   /** Freeze every registry once content loading is finished. */
@@ -56,6 +70,7 @@ export class Content {
     this.blocks.freeze();
     this.items.freeze();
     this.loot.freeze();
+    this.biomes.freeze();
     return this;
   }
 
