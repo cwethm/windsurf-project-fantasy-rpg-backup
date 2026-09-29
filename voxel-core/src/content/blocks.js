@@ -21,6 +21,7 @@
  *  tileEntity    tile-entity kind stored alongside the block, or null
  *  drops         loot table name consulted on harvest
  *  regrow        `{ into, seconds }` respawn rule, or null
+ *  support       'below' when the block needs a solid neighbour under it
  *  color         base colour the reference client meshes with
  */
 
@@ -70,6 +71,7 @@ const defaults = {
   tileEntity: null,
   drops: null,
   regrow: null,
+  support: null,
   color: 0x888888,
 };
 
@@ -187,6 +189,7 @@ export const BLOCK_DEFINITIONS = [
     hardness: 0.05,
     drops: 'flowers',
     regrow: { into: BLOCK_IDS.FLOWERS, seconds: 300 },
+    support: 'below',
     color: 0xe05b8a,
   }),
   block({
@@ -198,6 +201,7 @@ export const BLOCK_DEFINITIONS = [
     hardness: 0.05,
     drops: 'tall_grass',
     regrow: { into: BLOCK_IDS.TALL_GRASS, seconds: 180 },
+    support: 'below',
     color: 0x74b03a,
   }),
   block({
@@ -235,6 +239,7 @@ export const BLOCK_DEFINITIONS = [
     interactable: true,
     tileEntity: 'toggle',
     drops: 'torch',
+    support: 'below',
     color: 0xffd27f,
   }),
   block({
@@ -245,6 +250,7 @@ export const BLOCK_DEFINITIONS = [
     interactable: true,
     tileEntity: 'toggle',
     drops: 'door',
+    support: 'below',
     color: 0x8a6033,
   }),
 ];
