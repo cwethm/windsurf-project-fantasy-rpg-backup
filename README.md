@@ -2,6 +2,15 @@
 
 A server-authoritative multiplayer voxel-based 3D MMO game built with Three.js (client) and Node.js (server).
 
+> **Looking for the reusable core?** [`voxel-core/`](voxel-core/) is a
+> self-contained package extracted from the ideas in this project: a
+> deterministic procedural world generator, diff-based persistence for the 3D
+> environment, and a Node.js/Three.js multiplayer server + client, with blocks,
+> items and interactions defined as data rather than code branches. It has its
+> own `package.json`, tests and [README](voxel-core/README.md), and is intended
+> to be split out into a repository of its own
+> (`git subtree split --prefix=voxel-core`).
+
 ## Features
 
 ### 🆕 Passive Mob Following (NEW!)

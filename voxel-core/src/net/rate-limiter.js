@@ -58,6 +58,8 @@ export const ACTION_BUDGETS = {
   drop_item: 'inventory',
   pickup_item: 'inventory',
   transfer_item: 'inventory',
+  trash_item: 'inventory',
+  lock_slot: 'inventory',
   sort_inventory: 'inventory',
   chat: 'chat',
 };

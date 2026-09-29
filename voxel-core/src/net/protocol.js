@@ -22,6 +22,8 @@ export const C2S = {
   DROP_ITEM: 'drop_item',
   PICKUP_ITEM: 'pickup_item',
   TRANSFER_ITEM: 'transfer_item',
+  TRASH_ITEM: 'trash_item',
+  LOCK_SLOT: 'lock_slot',
   CLOSE_CONTAINER: 'close_container',
   SORT_INVENTORY: 'sort_inventory',
   CHAT: 'chat',
@@ -205,6 +207,8 @@ export function validate(msg) {
 
     case C2S.SPLIT_ITEM:
     case C2S.DROP_ITEM:
+    case C2S.TRASH_ITEM:
+    case C2S.LOCK_SLOT:
       return Number.isInteger(msg.slot) ? { ok: true } : { ok: false, reason: 'invalid slot' };
 
     case C2S.TRANSFER_ITEM:

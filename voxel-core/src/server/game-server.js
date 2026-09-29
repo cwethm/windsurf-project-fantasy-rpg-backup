@@ -278,6 +278,16 @@ export class GameServer {
       session.reply(C2S.SPLIT_ITEM, { ok: split, reason: split ? null : 'split refused' });
       session.sendSelfState();
     });
+    h.register(C2S.TRASH_ITEM, (session, msg) => {
+      const result = session.player.inventory.trash(msg.slot, msg.count ?? null);
+      session.reply(C2S.TRASH_ITEM, result);
+      if (result.ok) session.sendSelfState();
+    });
+    h.register(C2S.LOCK_SLOT, (session, msg) => {
+      const toggled = session.player.inventory.toggleLock(msg.slot);
+      session.reply(C2S.LOCK_SLOT, { ok: toggled, reason: toggled ? null : 'invalid slot' });
+      if (toggled) session.sendSelfState();
+    });
     h.register(C2S.SORT_INVENTORY, (session) => {
       session.player.inventory.sort();
       session.sendSelfState();

@@ -83,6 +83,9 @@ test('inventory and container payloads are validated', () => {
   assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'to_container' }).ok, true);
   assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'sideways' }).ok, false);
   assert.equal(validate({ t: C2S.PICKUP_ITEM, id: 'gi_1' }).ok, true);
+  assert.equal(validate({ t: C2S.TRASH_ITEM, slot: 3 }).ok, true);
+  assert.equal(validate({ t: C2S.TRASH_ITEM, slot: 'three' }).ok, false);
+  assert.equal(validate({ t: C2S.LOCK_SLOT, slot: 3 }).ok, true);
   assert.equal(validate({ t: C2S.CHAT, text: '   ' }).ok, false);
 });
 
@@ -538,4 +541,36 @@ test('shutting down persists the world and disconnects everyone', async () => {
   assert.equal(server.sessions.size, 0);
   assert.equal(session.closed, true);
   assert.ok(store.getWorldState().chunks.length > 0);
+});
+
+test('trashing destroys a stack but never a protected item', async () => {
+  const { server } = await makeServer();
+  const { client, session } = await connectAndLogin(server);
+  const protectedItem = content.items.all().find((def) => def.trashable === false);
+  assert.ok(protectedItem, 'expected at least one non-trashable item to exist');
+
+  session.player.inventory.setSlot(0, { item: 'coal', count: 5 });
+  await session.handleRaw(encode(C2S.TRASH_ITEM, { slot: 0 }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
+  assert.equal(session.player.inventory.countOf('coal'), 0);
+
+  session.player.inventory.setSlot(1, { item: protectedItem.id, count: 1 });
+  await session.handleRaw(encode(C2S.TRASH_ITEM, { slot: 1 }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, false);
+  assert.equal(session.player.inventory.countOf(protectedItem.id), 1);
+});
+
+test('locking a slot survives a round trip to the client', async () => {
+  const { server } = await makeServer();
+  const { client, session } = await connectAndLogin(server);
+
+  await session.handleRaw(encode(C2S.LOCK_SLOT, { slot: 2 }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
+  assert.deepEqual(client.last(S2C.SELF_STATE).inventory.lockedSlots, [2]);
+
+  await session.handleRaw(encode(C2S.LOCK_SLOT, { slot: 2 }));
+  assert.deepEqual(client.last(S2C.SELF_STATE).inventory.lockedSlots, []);
+
+  await session.handleRaw(encode(C2S.LOCK_SLOT, { slot: 9999 }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, false);
 });
