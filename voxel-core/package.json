@@ -1,0 +1,35 @@
+{
+  "name": "voxel-core",
+  "version": "0.1.0",
+  "description": "Reusable core toolkit for voxel games: procedural world generation, persistent 3D environment storage, and a Node.js/Three.js multiplayer server + client.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./world": "./src/world/index.js",
+    "./game": "./src/game/index.js",
+    "./storage": "./src/storage/index.js",
+    "./net": "./src/net/index.js",
+    "./server": "./src/server/index.js"
+  },
+  "scripts": {
+    "start": "node src/server/main.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "keywords": [
+    "voxel",
+    "procedural-generation",
+    "multiplayer",
+    "threejs",
+    "websocket",
+    "game-engine"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "dependencies": {
+    "three": "^0.186.1",
+    "ws": "^8.22.0"
+  }
+}
