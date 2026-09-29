@@ -117,4 +117,72 @@ export class Chunk {
     }
     return chunk;
   }
+
+  /**
+   * Serialise for the network. Voxel terrain is overwhelmingly runs of the
+   * same block, so run-length encoding turns a 16 KiB array into a few hundred
+   * numbers without needing a binary codec.
+   */
+  toWire() {
+    return {
+      chunkX: this.chunkX,
+      chunkZ: this.chunkZ,
+      revision: this.revision,
+      rle: rleEncode(this.blocks),
+      tileEntities: Object.fromEntries(this.tileEntities),
+    };
+  }
+
+  /** @param {ReturnType<Chunk['toWire']>} json */
+  static fromWire(json) {
+    const chunk = new Chunk(json.chunkX, json.chunkZ, rleDecode(json.rle, CHUNK_VOLUME));
+    chunk.revision = json.revision ?? 0;
+    for (const [key, value] of Object.entries(json.tileEntities ?? {})) {
+      chunk.tileEntities.set(key, value);
+    }
+    return chunk;
+  }
+}
+
+/**
+ * Run-length encode a block array into `[value, count, value, count, ...]`.
+ * @param {ArrayLike<number>} blocks
+ * @returns {number[]}
+ */
+export function rleEncode(blocks) {
+  const out = [];
+  if (blocks.length === 0) return out;
+  let current = blocks[0];
+  let run = 1;
+  for (let i = 1; i < blocks.length; i++) {
+    if (blocks[i] === current) {
+      run += 1;
+      continue;
+    }
+    out.push(current, run);
+    current = blocks[i];
+    run = 1;
+  }
+  out.push(current, run);
+  return out;
+}
+
+/**
+ * Inverse of `rleEncode`.
+ * @param {number[]} pairs
+ * @param {number} length expected output length
+ * @returns {Uint16Array}
+ */
+export function rleDecode(pairs, length) {
+  const out = new Uint16Array(length);
+  let cursor = 0;
+  for (let i = 0; i + 1 < pairs.length; i += 2) {
+    const value = pairs[i];
+    const run = pairs[i + 1];
+    const end = Math.min(length, cursor + run);
+    out.fill(value, cursor, end);
+    cursor = end;
+    if (cursor >= length) break;
+  }
+  return out;
 }

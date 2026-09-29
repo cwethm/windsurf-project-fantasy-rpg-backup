@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>voxel-core</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/three.module.js",
+          "three/webgpu": "/vendor/three/three.webgpu.js",
+          "three/tsl": "/vendor/three/three.tsl.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+
+    <div id="crosshair" class="crosshair" hidden>
+      <span class="crosshair-dot"></span>
+    </div>
+
+    <div id="hud" hidden>
+      <div id="focus-label" class="focus-label"></div>
+
+      <div class="vitals">
+        <div class="bar">
+          <span class="bar-fill health" id="health-fill"></span>
+          <span class="bar-label" id="health-label">20 / 20</span>
+        </div>
+        <div class="bar">
+          <span class="bar-fill energy" id="energy-fill"></span>
+          <span class="bar-label" id="energy-label">100 / 100</span>
+        </div>
+      </div>
+
+      <div id="quickbar" class="quickbar"></div>
+
+      <div id="chat-log" class="chat-log"></div>
+      <input id="chat-input" class="chat-input" type="text" maxlength="256" placeholder="Say something…" hidden />
+
+      <div class="hints">
+        <kbd>WASD</kbd> move · <kbd>Space</kbd> jump · <kbd>Shift</kbd> run ·
+        <kbd>LMB</kbd> harvest · <kbd>RMB</kbd> place/use · <kbd>E</kbd> interact ·
+        <kbd>C</kbd> crosshair · <kbd>V</kbd> view · <kbd>T</kbd> chat · <kbd>1-9</kbd> slots
+      </div>
+    </div>
+
+    <div id="login" class="overlay">
+      <form id="login-form" class="panel" autocomplete="off">
+        <h1>voxel&#8209;core</h1>
+        <p class="subtitle">reusable voxel multiplayer core</p>
+
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" minlength="3" maxlength="16"
+               pattern="[A-Za-z0-9_\-]{3,16}" required autocomplete="username" />
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" minlength="6" maxlength="128"
+               required autocomplete="current-password" />
+
+        <div class="actions">
+          <button type="submit" id="login-button">Log in</button>
+          <button type="button" id="register-button">Create account</button>
+        </div>
+        <p id="login-error" class="error" role="alert"></p>
+        <p id="login-status" class="status">Connecting…</p>
+      </form>
+    </div>
+
+    <script type="module" src="/js/main.js"></script>
+  </body>
+</html>
