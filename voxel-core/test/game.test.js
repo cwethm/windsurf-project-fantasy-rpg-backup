@@ -826,3 +826,29 @@ test('Player equip/unequip between inventory and equipment', async (t) => {
     assert.equal(player.unequipToInventory('head').reason, 'nothing equipped');
   });
 });
+
+test('transferStack honours a free destination slot', () => {
+  const from = makeInventory();
+  const to = makeInventory();
+  from.setSlot(0, { item: 'coal', count: 5 });
+  to.setSlot(1, { item: 'coal', count: 1 });
+
+  assert.equal(transferStack(from, 0, to, 2, 7).ok, true);
+  assert.equal(to.getSlot(7).count, 2);
+  assert.equal(to.getSlot(1).count, 1);
+
+  assert.equal(transferStack(from, 0, to, null, 7).ok, true);
+  assert.equal(to.getSlot(7).count, 2);
+  assert.equal(to.countOf('coal'), 6);
+  assert.equal(from.getSlot(0), null);
+});
+
+test('unequip never discards items carrying metadata', () => {
+  const player = makePlayer(new EventBus());
+  player.inventory.setSlot(0, { item: 'leather_cap', count: 1 });
+  player.equipFromSlot(0);
+  for (let i = 0; i < player.inventory.size; i++) player.inventory.setSlot(i, { item: 'coal', count: 1 });
+
+  assert.equal(player.unequipToInventory('head').reason, 'inventory full');
+  assert.equal(player.equipment.get('head').item, 'leather_cap');
+});

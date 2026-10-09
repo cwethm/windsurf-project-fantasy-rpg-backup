@@ -105,7 +105,7 @@ export class Player {
       return { ok: false, reason: `${definition?.name ?? stack.item} is not equippable` };
     }
     const current = this.equipment.get(definition.equipSlot);
-    if (current && stack.count > 1 && !inventory.canFit(current.item, 1)) {
+    if (current && stack.count > 1 && !this._hasRoomFor(current)) {
       return { ok: false, reason: 'inventory full' };
     }
 
@@ -140,7 +140,7 @@ export class Player {
       inventory.isValidSlot(toIndex) &&
       inventory.getSlot(toIndex) === null &&
       !inventory.lockedSlots.has(toIndex);
-    if (!targetFree && !inventory.canFit(equipped.item, 1)) {
+    if (!targetFree && !this._hasRoomFor(equipped)) {
       return { ok: false, reason: 'inventory full' };
     }
 
@@ -148,6 +148,16 @@ export class Player {
     if (targetFree) inventory.setSlot(toIndex, { ...equipped, count: 1 });
     else inventory.add(equipped.item, 1, equipped.meta ?? null);
     return { ok: true, item: equipped.item };
+  }
+
+  /**
+   * Can one of `stack` be added to the inventory? Stacks carrying metadata
+   * only merge with identical metadata, so they are only guaranteed a free slot.
+   * @param {{ item: string, meta?: object }} stack
+   */
+  _hasRoomFor(stack) {
+    if (stack.meta) return this.inventory.freeSlots > 0;
+    return this.inventory.canFit(stack.item, 1);
   }
 
   /** Current movement speed cap, including buffs. */

@@ -107,15 +107,25 @@ export function openContainer({ world, content, x, y, z }) {
  * @param {number} fromIndex
  * @param {Inventory} to
  * @param {number|null} [count] null moves the whole stack
+ * @param {number|null} [toIndex] preferred destination slot, used when free
  * @returns {{ ok: boolean, reason?: string, moved?: number }}
  */
-export function transferStack(from, fromIndex, to, count = null) {
+export function transferStack(from, fromIndex, to, count = null, toIndex = null) {
   const source = from.getSlot(fromIndex);
   if (!source) return { ok: false, reason: 'empty slot' };
   if (from.lockedSlots.has(fromIndex)) return { ok: false, reason: 'slot is locked' };
 
   const amount = count === null ? source.count : Math.min(count, source.count);
   if (amount <= 0) return { ok: false, reason: 'nothing to move' };
+
+  const targetFree =
+    toIndex !== null && to.isValidSlot(toIndex) && to.getSlot(toIndex) === null && !to.lockedSlots.has(toIndex);
+  if (targetFree) {
+    const placed = Math.min(amount, to.maxStackOf(source.item));
+    const moved = from.removeFromSlot(fromIndex, placed);
+    to.setSlot(toIndex, moved);
+    return { ok: true, moved: placed };
+  }
 
   const { added } = to.add(source.item, amount, source.meta ?? null);
   if (added === 0) return { ok: false, reason: 'no room' };

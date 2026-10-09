@@ -460,8 +460,8 @@ export class GameServer {
 
     const result =
       msg.direction === 'to_container'
-        ? transferStack(player.inventory, msg.slot, handle.inventory, msg.count ?? null)
-        : transferStack(handle.inventory, msg.slot, player.inventory, msg.count ?? null);
+        ? transferStack(player.inventory, msg.slot, handle.inventory, msg.count ?? null, msg.to ?? null)
+        : transferStack(handle.inventory, msg.slot, player.inventory, msg.count ?? null, msg.to ?? null);
     if (result.ok) handle.save();
 
     session.reply(C2S.TRANSFER_ITEM, result);

@@ -488,11 +488,11 @@ test('inventory panel gesture planning', async (t) => {
     });
     assert.deepEqual(planSlotAction(inv(1), box(0)), {
       type: C2S.TRANSFER_ITEM,
-      payload: { slot: 1, direction: 'to_container' },
+      payload: { slot: 1, direction: 'to_container', to: 0 },
     });
     assert.deepEqual(planSlotAction(box(3), inv(0)), {
       type: C2S.TRANSFER_ITEM,
-      payload: { slot: 3, direction: 'to_player' },
+      payload: { slot: 3, direction: 'to_player', to: 0 },
     });
     assert.deepEqual(planSlotAction(inv(5), { area: AREAS.TRASH }), { type: C2S.TRASH_ITEM, payload: { slot: 5 } });
     assert.equal(planSlotAction(box(0), box(1)), null);

@@ -30,6 +30,7 @@ class Game {
     this.net = new NetClient();
     this.hud = new Hud(this.content);
     this.targets = new TargetResolver(this.world, this.content);
+    this.awaitingContainer = false;
     this.inventoryPanel = new InventoryPanel({
       content: this.content,
       colorFor: (item) => this.hud.colorForItem(item),
@@ -116,11 +117,18 @@ class Game {
 
     net.on(S2C.CHAT, ({ from, text }) => this.hud.addChat(text, from));
     net.on(S2C.CONTAINER, ({ position, slots }) => {
-      this.cancelHarvest();
-      this.inventoryPanel.setContainer({ position, slots: slots ?? [] });
+      const container = { position, slots: slots ?? [] };
+      if (this.awaitingContainer) {
+        this.awaitingContainer = false;
+        this.cancelHarvest();
+        this.inventoryPanel.openContainer(container);
+      } else {
+        this.inventoryPanel.updateContainer(container);
+      }
     });
 
     net.on(S2C.ACTION_RESULT, (result) => {
+      if (result.action === C2S.INTERACT) this.awaitingContainer = result.detail?.action === 'open-container';
       if (result.ok !== false || !result.reason) return;
       if (this.inventoryPanel.isOpen) this.inventoryPanel.flash(result.reason);
       else this.hud.addChat(`${result.action}: ${result.reason}`);

@@ -48,7 +48,9 @@ export function planSlotAction(from, to) {
       return from.index === to.index ? null : { type: C2S.MOVE_ITEM, payload: { from: from.index, to: to.index } };
     }
     if (to.area === EQUIPMENT) return { type: C2S.EQUIP, payload: { slot: from.index } };
-    if (to.area === CONTAINER) return { type: C2S.TRANSFER_ITEM, payload: { slot: from.index, direction: 'to_container' } };
+    if (to.area === CONTAINER) {
+      return { type: C2S.TRANSFER_ITEM, payload: { slot: from.index, direction: 'to_container', to: to.index ?? null } };
+    }
     if (to.area === TRASH) return { type: C2S.TRASH_ITEM, payload: { slot: from.index } };
     return null;
   }
@@ -56,7 +58,7 @@ export function planSlotAction(from, to) {
     return { type: C2S.UNEQUIP, payload: { equipSlot: from.slot, to: to.index } };
   }
   if (from.area === CONTAINER && to.area === INVENTORY) {
-    return { type: C2S.TRANSFER_ITEM, payload: { slot: from.index, direction: 'to_player' } };
+    return { type: C2S.TRANSFER_ITEM, payload: { slot: from.index, direction: 'to_player', to: to.index ?? null } };
   }
   return null;
 }
@@ -150,10 +152,20 @@ export class InventoryPanel {
   }
 
   /** @param {{ position: object, slots: Array<object|null> }} container */
-  setContainer(container) {
+  openContainer(container) {
     this.container = container;
     if (!this.isOpen) this.open();
     else this.render();
+  }
+
+  /**
+   * Refresh the chest already on screen; ignored once the panel was closed.
+   * @param {{ position: object, slots: Array<object|null> }} container
+   */
+  updateContainer(container) {
+    if (this.container === null) return;
+    this.container = container;
+    this.render();
   }
 
   /** @param {string} text */

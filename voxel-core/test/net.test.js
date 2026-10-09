@@ -93,6 +93,8 @@ test('inventory and container payloads are validated', () => {
   assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: 'head' }).ok, true);
   assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: '' }).ok, false);
   assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: 'head', to: 1.5 }).ok, false);
+  assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'to_player', to: 3 }).ok, true);
+  assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'to_player', to: 'x' }).ok, false);
 });
 
 // ------------------------------------------------------------ rate limiter

@@ -218,6 +218,9 @@ export function validate(msg) {
       if (msg.direction !== 'to_container' && msg.direction !== 'to_player') {
         return { ok: false, reason: 'invalid direction' };
       }
+      if (msg.to !== undefined && msg.to !== null && !Number.isInteger(msg.to)) {
+        return { ok: false, reason: 'invalid slot' };
+      }
       return { ok: true };
 
     case C2S.EQUIP:

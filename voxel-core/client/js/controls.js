@@ -131,6 +131,7 @@ export class Controls {
     const action = actions[event.code];
     if (action) {
       if (action === 'chat' || event.code === 'Tab') event.preventDefault();
+      if (event.repeat && action === 'toggle_inventory') return;
       this.onAction(action);
     }
   }
