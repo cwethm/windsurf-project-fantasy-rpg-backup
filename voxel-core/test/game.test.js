@@ -769,3 +769,60 @@ test('network state exposes only what other clients need', () => {
   assert.ok(self.inventory);
   assert.ok(self.stats.defense >= 1);
 });
+
+test('Player equip/unequip between inventory and equipment', async (t) => {
+  await t.test('equipping swaps the replaced item into the vacated slot', () => {
+    const player = makePlayer(new EventBus());
+    player.inventory.setSlot(3, { item: 'wooden_pickaxe', count: 1 });
+    player.inventory.setSlot(4, { item: 'wooden_axe', count: 1 });
+
+    assert.equal(player.equipFromSlot(3).ok, true);
+    assert.equal(player.equipment.get('main_hand').item, 'wooden_pickaxe');
+    assert.equal(player.inventory.getSlot(3), null);
+
+    const swap = player.equipFromSlot(4);
+    assert.equal(swap.ok, true);
+    assert.equal(swap.replaced.item, 'wooden_pickaxe');
+    assert.equal(player.equipment.get('main_hand').item, 'wooden_axe');
+    assert.equal(player.inventory.getSlot(4).item, 'wooden_pickaxe');
+  });
+
+  await t.test('refuses empty, locked and non-equippable slots', () => {
+    const player = makePlayer(new EventBus());
+    player.inventory.setSlot(0, { item: 'bread', count: 2 });
+    player.inventory.setSlot(1, { item: 'leather_cap', count: 1 });
+    player.inventory.toggleLock(1);
+
+    assert.equal(player.equipFromSlot(5).reason, 'empty slot');
+    assert.match(player.equipFromSlot(0).reason, /not equippable/);
+    assert.equal(player.equipFromSlot(1).reason, 'slot is locked');
+    assert.equal(player.equipment.get('head'), null);
+  });
+
+  await t.test('unequip prefers the requested free slot, else any free slot', () => {
+    const player = makePlayer(new EventBus());
+    player.inventory.setSlot(0, { item: 'leather_cap', count: 1 });
+    player.equipFromSlot(0);
+
+    assert.equal(player.unequipToInventory('head', 12).ok, true);
+    assert.equal(player.inventory.getSlot(12).item, 'leather_cap');
+    assert.equal(player.inventory.getSlot(12).meta.durability, 80);
+
+    player.equipFromSlot(12);
+    player.inventory.setSlot(5, { item: 'bread', count: 1 });
+    assert.equal(player.unequipToInventory('head', 5).ok, true);
+    assert.equal(player.inventory.getSlot(5).item, 'bread');
+    assert.equal(player.inventory.countOf('leather_cap'), 1);
+  });
+
+  await t.test('unequip fails when the inventory is full', () => {
+    const player = makePlayer(new EventBus());
+    player.inventory.setSlot(0, { item: 'wooden_shield', count: 1 });
+    player.equipFromSlot(0);
+    for (let i = 0; i < player.inventory.size; i++) player.inventory.setSlot(i, { item: 'wooden_axe', count: 1 });
+
+    assert.equal(player.unequipToInventory('off_hand').reason, 'inventory full');
+    assert.equal(player.equipment.get('off_hand').item, 'wooden_shield');
+    assert.equal(player.unequipToInventory('head').reason, 'nothing equipped');
+  });
+});

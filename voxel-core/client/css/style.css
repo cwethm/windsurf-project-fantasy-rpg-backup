@@ -237,3 +237,90 @@ kbd {
   font-family: inherit;
   font-size: 10px;
 }
+
+/* ------------------------------------------------------------- inventory */
+
+.inventory-panel {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 6, 9, 0.55);
+  z-index: 5;
+}
+.inventory-panel[hidden] { display: none; }
+
+.inventory-window {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow: auto;
+}
+
+.inv-column h2 { margin: 0 0 10px; font-size: 15px; }
+.inv-column h3 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.slot-grid { display: grid; grid-template-columns: repeat(9, 48px); gap: 4px; }
+
+.inventory-panel .slot { cursor: grab; user-select: none; }
+.slot.locked { border-color: #c9a227; }
+.slot.locked::after { content: "\1F512"; position: absolute; left: 2px; bottom: 1px; font-size: 9px; }
+.slot.drop-target { border-color: var(--accent); background: rgba(108, 192, 74, 0.25); }
+.slot.empty-equip { border-style: dashed; }
+.slot .durability {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 2px;
+  height: 3px;
+  border-radius: 2px;
+  background: #6cc04a;
+  transform-origin: left;
+  display: none;
+}
+.slot .durability.visible { display: block; }
+
+.equipment-slots { display: grid; gap: 6px; }
+.equip-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.equip-label { color: var(--muted); }
+
+.equipment-stats { display: grid; gap: 2px; font-size: 12px; min-width: 140px; }
+.equipment-stats div { display: flex; justify-content: space-between; gap: 12px; }
+.stat-name { color: var(--muted); text-transform: capitalize; }
+
+.inv-footer { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.slot.trash {
+  display: grid;
+  place-items: center;
+  border-color: #8a3a3a;
+  color: #ff9a9a;
+  font-size: 11px;
+  cursor: default;
+}
+.inv-help { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.inv-message { min-height: 16px; margin: 8px 0 0; font-size: 12px; color: #ff9a9a; }
+
+.inv-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+}
+.inv-close:hover { color: var(--text); }

@@ -16,6 +16,7 @@ import { SceneView } from './scene.js';
 import { Controls } from './controls.js';
 import { TargetResolver } from './targeting.js';
 import { Hud } from './hud.js';
+import { InventoryPanel } from './inventory-panel.js';
 
 /** Movement updates per second sent to the server. */
 const MOVE_HZ = 15;
@@ -29,6 +30,14 @@ class Game {
     this.net = new NetClient();
     this.hud = new Hud(this.content);
     this.targets = new TargetResolver(this.world, this.content);
+    this.inventoryPanel = new InventoryPanel({
+      content: this.content,
+      colorFor: (item) => this.hud.colorForItem(item),
+      send: (type, payload) => this.net.send(type, payload),
+      onClose: (hadContainer) => {
+        if (hadContainer) this.net.send(C2S.CLOSE_CONTAINER, {});
+      },
+    });
 
     this.canvas = document.getElementById('viewport');
     this.scene = new SceneView(this.canvas, this.world, this.content);
@@ -106,15 +115,15 @@ class Game {
     });
 
     net.on(S2C.CHAT, ({ from, text }) => this.hud.addChat(text, from));
-    net.on(S2C.CONTAINER, (payload) => {
-      const contents = (payload.inventory?.slots ?? [])
-        .filter(Boolean)
-        .map((stack) => `${stack.count}x ${this.content.item(stack.item)?.name ?? stack.item}`);
-      this.hud.addChat(contents.length ? `Container: ${contents.join(', ')}` : 'Container is empty');
+    net.on(S2C.CONTAINER, ({ position, slots }) => {
+      this.cancelHarvest();
+      this.inventoryPanel.setContainer({ position, slots: slots ?? [] });
     });
 
     net.on(S2C.ACTION_RESULT, (result) => {
-      if (result.ok === false && result.reason) this.hud.addChat(`${result.action}: ${result.reason}`);
+      if (result.ok !== false || !result.reason) return;
+      if (this.inventoryPanel.isOpen) this.inventoryPanel.flash(result.reason);
+      else this.hud.addChat(`${result.action}: ${result.reason}`);
     });
     net.on(S2C.ERROR, ({ reason }) => reason && this.hud.addChat(reason));
     net.on('close', () => this.hud.addChat('Disconnected — reconnecting…'));
@@ -126,6 +135,7 @@ class Game {
     this.inventory = state.inventory;
     this.hud.setVitals(state);
     this.hud.setInventory(state.inventory);
+    this.inventoryPanel.setState(state);
     this.avatar?.setHeldItem(state.held, (item) => this.hud.colorForItem(item));
   }
 
@@ -339,9 +349,14 @@ const ACTIONS = {
     game.hud.setCrosshair(game.crosshairVisible);
   },
   toggle_view: (game) => game.setFirstPerson(!game.firstPerson),
+  toggle_inventory: (game) => {
+    game.cancelHarvest();
+    game.inventoryPanel.toggle();
+  },
   cancel: (game) => {
     game.cancelHarvest();
-    game.net.send(C2S.CLOSE_CONTAINER, {});
+    if (game.inventoryPanel.isOpen) game.inventoryPanel.close();
+    else game.net.send(C2S.CLOSE_CONTAINER, {});
   },
 };
 

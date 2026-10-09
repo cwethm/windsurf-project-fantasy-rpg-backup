@@ -61,6 +61,8 @@ export const ACTION_BUDGETS = {
   trash_item: 'inventory',
   lock_slot: 'inventory',
   sort_inventory: 'inventory',
+  equip: 'inventory',
+  unequip: 'inventory',
   chat: 'chat',
 };
 

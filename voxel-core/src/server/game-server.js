@@ -292,6 +292,14 @@ export class GameServer {
       session.player.inventory.sort();
       session.sendSelfState();
     });
+    h.register(C2S.EQUIP, (session, msg) => {
+      const result = session.player.equipFromSlot(msg.slot);
+      this._afterEquipmentChange(session, C2S.EQUIP, result);
+    });
+    h.register(C2S.UNEQUIP, (session, msg) => {
+      const result = session.player.unequipToInventory(msg.equipSlot, msg.to ?? null);
+      this._afterEquipmentChange(session, C2S.UNEQUIP, result);
+    });
     h.register(C2S.DROP_ITEM, (session, msg) => this._handleDrop(session, msg));
     h.register(C2S.PICKUP_ITEM, (session, msg) => {
       const result = this.groundItems.pickup(msg.id, session.player);
@@ -398,6 +406,15 @@ export class GameServer {
     session.syncChunks();
     this.broadcastNear(player.position, S2C.PLAYER_UPDATE, player.toNetworkState(), { exclude: session });
     this.bus.emit(EVENTS.PLAYER_MOVED, { playerId: player.id, position: player.position });
+  }
+
+  _afterEquipmentChange(session, action, result) {
+    session.reply(action, result);
+    if (!result.ok) return;
+    session.sendSelfState();
+    this.broadcastNear(session.player.position, S2C.PLAYER_UPDATE, session.player.toNetworkState(), {
+      exclude: session,
+    });
   }
 
   _handleDrop(session, msg) {

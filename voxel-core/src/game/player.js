@@ -87,6 +87,69 @@ export class Player {
     return this.equipment.mainHand ? 'main_hand' : null;
   }
 
+  /**
+   * Equip the item in an inventory slot. Whatever the equipment slot held goes
+   * back into the inventory, into the vacated slot when the stack was a single
+   * item.
+   * @param {number} index
+   * @returns {{ ok: boolean, reason?: string, slot?: string, replaced?: object|null }}
+   */
+  equipFromSlot(index) {
+    const inventory = this.inventory;
+    const stack = inventory.getSlot(index);
+    if (!stack) return { ok: false, reason: 'empty slot' };
+    if (inventory.lockedSlots.has(index)) return { ok: false, reason: 'slot is locked' };
+
+    const definition = this.content.items.get(stack.item);
+    if (!definition?.equipSlot) {
+      return { ok: false, reason: `${definition?.name ?? stack.item} is not equippable` };
+    }
+    const current = this.equipment.get(definition.equipSlot);
+    if (current && stack.count > 1 && !inventory.canFit(current.item, 1)) {
+      return { ok: false, reason: 'inventory full' };
+    }
+
+    const single = stack.meta ? { item: stack.item, meta: stack.meta } : { item: stack.item };
+    const result = this.equipment.equip(single, definition.equipSlot);
+    if (!result.ok) return result;
+
+    const replaced = result.replaced ?? null;
+    if (stack.count === 1) {
+      inventory.setSlot(index, replaced ? { ...replaced, count: 1 } : null);
+    } else {
+      inventory.removeFromSlot(index, 1);
+      if (replaced) inventory.add(replaced.item, 1, replaced.meta ?? null);
+    }
+    return { ok: true, slot: definition.equipSlot, replaced };
+  }
+
+  /**
+   * Move an equipped item back into the inventory: into `toIndex` when that
+   * slot is free, otherwise wherever it fits.
+   * @param {string} slotName
+   * @param {number|null} [toIndex]
+   * @returns {{ ok: boolean, reason?: string, item?: string }}
+   */
+  unequipToInventory(slotName, toIndex = null) {
+    const inventory = this.inventory;
+    const equipped = this.equipment.get(slotName);
+    if (!equipped) return { ok: false, reason: 'nothing equipped' };
+
+    const targetFree =
+      toIndex !== null &&
+      inventory.isValidSlot(toIndex) &&
+      inventory.getSlot(toIndex) === null &&
+      !inventory.lockedSlots.has(toIndex);
+    if (!targetFree && !inventory.canFit(equipped.item, 1)) {
+      return { ok: false, reason: 'inventory full' };
+    }
+
+    this.equipment.unequip(slotName);
+    if (targetFree) inventory.setSlot(toIndex, { ...equipped, count: 1 });
+    else inventory.add(equipped.item, 1, equipped.meta ?? null);
+    return { ok: true, item: equipped.item };
+  }
+
   /** Current movement speed cap, including buffs. */
   maxSpeed(now = Date.now()) {
     return WALK_SPEED * this.character.getStat('move_speed', now);
