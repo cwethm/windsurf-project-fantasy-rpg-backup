@@ -426,6 +426,10 @@ const ACTIONS = {
     game.hud.setCrosshair(game.crosshairVisible);
   },
   toggle_view: (game) => game.setFirstPerson(!game.firstPerson),
+  chat: (game) => {
+    game.cancelHarvest();
+    game.hud.openChat();
+  },
   toggle_inventory: (game) => {
     game.cancelHarvest();
     game.inventoryPanel.toggle();
