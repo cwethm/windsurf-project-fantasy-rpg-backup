@@ -70,8 +70,11 @@ later (`ATTACK`, `TILL`, `PAINT`…) does not touch the existing three.
 voxel-core/
 ├── src/
 │   ├── core/         event bus, registries, seeded RNG, shared constants
-│   ├── content/      blocks, items, loot tables, biomes  (all pure data)
+│   ├── content/      blocks, items, loot tables, biomes, entities, spawn rules
+│   │                 (all pure data)
 │   ├── world/        coords, noise, chunks, generator, world, raycast, physics
+│   ├── entity/       form codes, body plans, hitboxes, brains, entity manager,
+│   │                 spawner
 │   ├── game/         inventory, equipment, character, containers, ground items,
 │   │                 interaction + item-use dispatchers, player
 │   ├── net/          wire protocol, rate limiting, interest management
@@ -82,7 +85,7 @@ voxel-core/
 └── test/             node:test suites, one per layer
 ```
 
-**Browser-safety rule:** `core`, `content`, `world`, `game` and `net` import no
+**Browser-safety rule:** `core`, `content`, `entity`, `world`, `game` and `net` import no
 Node built-ins, so the browser loads them directly from `/src/...`. Only
 `storage` and `server` may use `node:` modules. This is what lets the client
 run the *same* physics, raycast, harvest-timing and protocol code the server
@@ -257,6 +260,41 @@ right-click to split a stack and `Ctrl`+click to lock a slot. Every gesture is
 a protocol verb (`move_item`, `equip`, `unequip`, `transfer_item`, …); the
 server re-validates it and replies with fresh state.
 
+Animals are drawn by `client/js/entity-view.js`, which rebuilds each one from
+its form code, seed and size, then animates it (diagonal-pair gait, grazing,
+tail sway, falling over on death). Left click hits the animal under the
+crosshair; `E` or right click on a carcass butchers it.
+
+### 8. Entities (mobs and NPCs)
+
+Non-player entities are content like blocks: an entry in
+`src/content/entities.js` names a **form code**, stats, a **brain** and a
+**harvest** loot table, and a spawn rule says where it appears.
+
+- **Form codes** describe a procedural body compactly:
+  `Q|bd:L14W8H8|lg:L7T3|hd:L5W4H4|hn:2L2C1|ud|pt:patch,F2EEE6,3A2A20`. The
+  first token picks a body plan (`Q` = large quadruped); each `op:params`
+  feature picks a registered shape and passes it numbers in 1/16 block
+  (`L14~2` rolls 14 ± 2 per individual). `src/entity/form-code.js` parses and
+  resolves them; the server derives hitboxes and the client builds meshes from
+  the same result.
+- **Brains** (`src/entity/brains.js`) are registered handlers that set an
+  intent (move target, speed, animation). `grazer` idles, grazes, wanders its
+  territory and flees whoever hurt it.
+- **Spawning** (`src/entity/spawner.js`) tops up wildlife around each player,
+  choosing rules that match the column's biome and surface block, weighted by
+  rarity (`common` … `very_rare`), up to a local cap. Entities despawn when no
+  player is near.
+- **Combat** is click-to-hit with a 500 ms cooldown (`attack`); the server
+  checks reach and line of sight against the entity box.
+- **Corpses** stay for `corpse` seconds. `interact_entity` butchers one by
+  rolling its harvest table with your tool and knowledge. Loot entries the
+  harvester is not equipped or trained for still drop the real item at
+  `unskilled` odds (default 5%) and otherwise may yield their `ruined` item
+  (mangled meat, tattered hide); this applies to block loot tables too.
+
+Phase 1 entities are not saved; they respawn from the rules.
+
 ---
 
 ## Extending it
@@ -282,6 +320,22 @@ const content = createContent({
 
 `Content` validates every cross-reference at construction, so a typo in
 `placeable` or `drops` fails loudly at boot rather than silently at runtime.
+
+### Add a mob
+
+```js
+const content = createContent({
+  entities: [{
+    id: 'aurochs', name: 'Aurochs', brain: 'grazer', harvest: 'cow_carcass',
+    form: 'Q|bd:L18W10H10|lg:L8T4|nk:L3A10|hd:L6W5H5|hn:2L6C2|tl:L8|pt:solid,3B2A1E',
+    traits: { size: [1, 1.2], territory: 14 },
+    stats: { health: 18, speed: 1.8, defense: 1 },
+  }],
+  spawnRules: [{ id: 'steppe_aurochs', entity: 'aurochs', biomes: ['savanna'], group: [2, 3], rarity: 'rare' }],
+}).freeze();
+```
+
+New behaviour is `BRAINS.register('name', (entity, { now, rng }) => { ... })`.
 
 ### Add an item action
 

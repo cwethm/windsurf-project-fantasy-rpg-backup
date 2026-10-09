@@ -340,7 +340,7 @@ export class InteractionSystem {
       );
     }
 
-    const awarded = this._awardDrops(player, [...drops, ...spilled], target, now);
+    const awarded = this.awardDrops(player, [...drops, ...spilled], target, now);
     const toolSlot = player.toolSlot();
     const toolResult = toolSlot ? player.equipment.damage(toolSlot, 1) : null;
 
@@ -359,7 +359,7 @@ export class InteractionSystem {
    * Give drops to the harvester, falling back to ground items when the
    * inventory is full (or when `collectDrops` is off).
    */
-  _awardDrops(player, drops, target, now) {
+  awardDrops(player, drops, target, now) {
     const awarded = [];
     for (const drop of drops) {
       let remaining = drop.count;

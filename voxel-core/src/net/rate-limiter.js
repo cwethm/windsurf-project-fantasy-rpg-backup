@@ -63,6 +63,8 @@ export const ACTION_BUDGETS = {
   sort_inventory: 'inventory',
   equip: 'inventory',
   unequip: 'inventory',
+  attack: 'build',
+  interact_entity: 'build',
   chat: 'chat',
 };
 

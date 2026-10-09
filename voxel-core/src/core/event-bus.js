@@ -116,4 +116,10 @@ export const EVENTS = {
   ITEM_BROKE: 'item:broke',
 
   INTERACTION: 'interaction:performed',
+
+  ENTITY_SPAWNED: 'entity:spawned',
+  ENTITY_DAMAGED: 'entity:damaged',
+  ENTITY_DIED: 'entity:died',
+  ENTITY_HARVESTED: 'entity:harvested',
+  ENTITY_DESPAWNED: 'entity:despawned',
 };

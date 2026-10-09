@@ -15,6 +15,9 @@ import { ClientWorld } from './world-view.js';
 import { SceneView } from './scene.js';
 import { Controls } from './controls.js';
 import { TargetResolver } from './targeting.js';
+import { pickEntity } from '/src/entity/hitbox.js';
+import { directionFromAngles } from '/src/world/raycast.js';
+import { ATTACK_COOLDOWN_MS } from '/src/core/constants.js';
 import { Hud } from './hud.js';
 import { InventoryPanel } from './inventory-panel.js';
 
@@ -54,6 +57,9 @@ class Game {
     this.selfState = null;
     this.inventory = null;
     this.focus = null;
+    /** Entity under the crosshair, when it is nearer than any block. */
+    this.entityFocus = null;
+    this.nextAttackAt = 0;
     this.crosshairVisible = true;
     this.firstPerson = true;
     this.harvest = null;
@@ -115,6 +121,11 @@ class Game {
       this.scene.removeGroundItems(removed ?? []);
     });
 
+    net.on(S2C.ENTITY_ADD, ({ entities }) => this.scene.addEntities(entities));
+    net.on(S2C.ENTITY_UPDATE, ({ entities }) => this.scene.updateEntities(entities));
+    net.on(S2C.ENTITY_REMOVE, ({ ids }) => this.scene.removeEntities(ids));
+    net.on(S2C.ENTITY_ACTION, (payload) => this.scene.entityAction(payload));
+
     net.on(S2C.CHAT, ({ from, text }) => this.hud.addChat(text, from));
     net.on(S2C.CONTAINER, ({ position, slots }) => {
       const container = { position, slots: slots ?? [] };
@@ -129,7 +140,9 @@ class Game {
 
     net.on(S2C.ACTION_RESULT, (result) => {
       if (result.action === C2S.INTERACT) this.awaitingContainer = result.detail?.action === 'open-container';
+      if (result.action === C2S.INTERACT_ENTITY && result.ok) this.reportButchering(result.detail);
       if (result.ok !== false || !result.reason) return;
+      if (result.action === C2S.ATTACK && result.reason === 'attack cooling down') return;
       if (this.inventoryPanel.isOpen) this.inventoryPanel.flash(result.reason);
       else this.hud.addChat(`${result.action}: ${result.reason}`);
     });
@@ -224,7 +237,44 @@ class Game {
     return { toolClass: def?.toolClass ?? null, toolTier: def?.toolTier ?? 0 };
   }
 
+  /** Chat summary of what a corpse yielded. */
+  reportButchering(detail) {
+    const name = detail?.name?.toLowerCase() ?? 'carcass';
+    const drops = detail?.drops ?? [];
+    if (drops.length === 0) {
+      this.hud.addChat(`You hack at the ${name} but get nothing useful.`);
+      return;
+    }
+    const parts = drops.map((d) => `${d.count}× ${this.content.items.get(d.item)?.name ?? d.item}`);
+    this.hud.addChat(`You butcher the ${name}: ${parts.join(', ')}`);
+  }
+
+  /** Left click on a living entity: hit it, client-side throttled to the server cooldown. */
+  attack() {
+    const now = performance.now();
+    if (now < this.nextAttackAt || this.entityFocus?.view.state !== 'alive') return;
+    this.nextAttackAt = now + ATTACK_COOLDOWN_MS;
+    this.net.send(C2S.ATTACK, { entity: this.entityFocus.view.id });
+  }
+
+  /** Examine and butcher the focused corpse. */
+  interactEntity() {
+    this.net.send(C2S.INTERACT_ENTITY, { entity: this.entityFocus.view.id });
+  }
+
+  /** Nearest entity under the crosshair, if closer than the focused block. */
+  _resolveEntityFocus() {
+    const eye = this.controls.eyePosition();
+    const hit = pickEntity(eye, directionFromAngles(this.controls.yaw, this.controls.pitch), this.scene.entities.values(), this.targets.reach);
+    if (!hit || (this.focus?.via === 'ray' && this.focus.distance < hit.distance)) return null;
+    return { view: hit.entity, distance: hit.distance };
+  }
+
   beginHarvest() {
+    if (this.entityFocus) {
+      this.attack();
+      return;
+    }
     if (!this.focus) return;
     const seconds = computeHarvestSeconds(this.focus.def, this.heldTool());
     if (seconds === null) return;
@@ -266,6 +316,10 @@ class Game {
    * picks the more likely intent so the round trip is not wasted.
    */
   useHeld() {
+    if (this.entityFocus?.view.state === 'corpse') {
+      this.interactEntity();
+      return;
+    }
     if (!this.focus) {
       this.net.send(C2S.USE_ITEM, { slot: this.selectedSlot(), target: null });
       return;
@@ -299,8 +353,18 @@ class Game {
       this.controls.pitch,
       { proximityFallback: true },
     );
-    this.scene.setHighlight(this.focus);
-    this.hud.setFocus(this.focus);
+    this.entityFocus = this._resolveEntityFocus();
+    if (this.entityFocus) {
+      const { view, distance } = this.entityFocus;
+      const label = view.state === 'corpse' ? `${view.def.name} carcass · E to butcher` : `${view.def.name} ${view.health}/${view.maxHealth}`;
+      this.entityFocus.blockBehind = this.focus;
+      this.focus = null;
+      this.scene.setHighlight(null);
+      this.hud.setFocus({ blockName: label, distance });
+    } else {
+      this.scene.setHighlight(this.focus);
+      this.hud.setFocus(this.focus);
+    }
 
     this._tickHarvest();
 
@@ -335,8 +399,13 @@ const ACTIONS = {
   harvest_stop: (game) => game.cancelHarvest(),
   use: (game) => game.useHeld(),
   interact: (game) => {
-    if (!game.focus) return;
-    game.net.send(C2S.INTERACT, { target: { x: game.focus.x, y: game.focus.y, z: game.focus.z } });
+    if (game.entityFocus?.view.state === 'corpse') {
+      game.interactEntity();
+      return;
+    }
+    const target = game.focus ?? game.entityFocus?.blockBehind;
+    if (!target) return;
+    game.net.send(C2S.INTERACT, { target: { x: target.x, y: target.y, z: target.z } });
   },
   select_slot: (game, { slot }) => {
     if (!game.inventory || slot >= game.inventory.quickbarSize) return;

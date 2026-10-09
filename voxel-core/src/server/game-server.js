@@ -24,6 +24,7 @@ import {
   DEFAULT_VIEW_DISTANCE,
   QUICKBAR_SLOTS,
   INVENTORY_SLOTS,
+  ATTACK_COOLDOWN_MS,
 } from '../core/constants.js';
 import { createContent } from '../content/index.js';
 import { WorldGenerator } from '../world/generator.js';
@@ -36,6 +37,11 @@ import { ItemUseSystem } from '../game/item-use.js';
 import { openContainer, transferStack } from '../game/containers.js';
 import { C2S, S2C } from '../net/protocol.js';
 import { sessionsNear } from '../net/interest.js';
+import { raycast, directionFromAngles } from '../world/raycast.js';
+import { EntityManager, Spawner, entityBox, distanceToBox, rayBoxDistance } from '../entity/index.js';
+
+/** Blocks of slack around an entity box when checking the player's aim. */
+const AIM_SLACK = 0.3;
 import { Session } from './session.js';
 import { authenticate } from './auth.js';
 
@@ -44,6 +50,11 @@ export const DEFAULT_SERVER_OPTIONS = {
   viewDistance: DEFAULT_VIEW_DISTANCE,
   chunksPerUpdate: 12,
   tickIntervalMs: 1000,
+  /** AI/physics step for mobs; 0 disables the timer (tests drive `tickEntities`). */
+  entityTickMs: 100,
+  spawnEntities: true,
+  /** Overrides for `DEFAULT_SPAWN_OPTIONS`. */
+  spawn: undefined,
   maxPlayers: 32,
   collectDrops: true,
   rateLimits: undefined,
@@ -87,6 +98,19 @@ export class GameServer {
       collectDrops: this.options.collectDrops,
     });
     this.items = new ItemUseSystem({ content: this.content, interactions: this.interactions, bus: this.bus });
+    this.entities = new EntityManager({
+      content: this.content,
+      world: this.world,
+      bus: this.bus,
+      seed: store?.worldSeed ?? seed,
+    });
+    this.spawner = new Spawner({
+      content: this.content,
+      world: this.world,
+      entities: this.entities,
+      seed: store?.worldSeed ?? seed,
+      options: this.options.spawn ?? {},
+    });
 
     /** @type {Map<string, Session>} */
     this.sessions = new Map();
@@ -94,6 +118,8 @@ export class GameServer {
     this.sessionsByPlayer = new Map();
     this.handlers = new HandlerRegistry('message');
     this._tickTimer = null;
+    this._entityTimer = null;
+    this._lastEntityTick = Date.now();
 
     this._registerHandlers();
     this._subscribeToWorld();
@@ -296,6 +322,8 @@ export class GameServer {
       const result = session.player.equipFromSlot(msg.slot);
       this._afterEquipmentChange(session, C2S.EQUIP, result);
     });
+    h.register(C2S.ATTACK, (session, msg) => this._handleAttack(session, msg));
+    h.register(C2S.INTERACT_ENTITY, (session, msg) => this._handleInteractEntity(session, msg));
     h.register(C2S.UNEQUIP, (session, msg) => {
       const result = session.player.unequipToInventory(msg.equipSlot, msg.to ?? null);
       this._afterEquipmentChange(session, C2S.UNEQUIP, result);
@@ -417,6 +445,124 @@ export class GameServer {
     });
   }
 
+  /**
+   * Can a player hit or touch an entity: inside reach of its box and not
+   * behind a solid block.
+   */
+  _checkEntityReach(player, entity) {
+    const eye = player.eyePosition;
+    const box = entityBox(entity);
+    if (distanceToBox(eye, box) > MAX_REACH) return { ok: false, reason: 'out of reach' };
+    const aimBox = {
+      min: { x: box.min.x - AIM_SLACK, y: box.min.y - AIM_SLACK, z: box.min.z - AIM_SLACK },
+      max: { x: box.max.x + AIM_SLACK, y: box.max.y + AIM_SLACK, z: box.max.z + AIM_SLACK },
+    };
+    const direction = directionFromAngles(player.yaw, player.pitch);
+    const entry = rayBoxDistance(eye, direction, aimBox, MAX_REACH + AIM_SLACK);
+    if (entry === null) return { ok: false, reason: 'not looking at it' };
+    const hit = raycast({
+      origin: eye,
+      direction,
+      maxDistance: entry,
+      getBlock: (x, y, z) => this.world.getBlock(x, y, z),
+      isHit: (blockId) => this.content.isSolid(blockId),
+    });
+    if (hit) return { ok: false, reason: 'no line of sight' };
+    return { ok: true };
+  }
+
+  _handleAttack(session, msg) {
+    const player = session.player;
+    const now = Date.now();
+    const entity = this.entities.get(msg.entity);
+    if (!entity || entity.state !== 'alive') {
+      session.reply(C2S.ATTACK, { ok: false, reason: 'nothing to attack' });
+      return;
+    }
+    if (now - session.lastAttackAt < ATTACK_COOLDOWN_MS) {
+      session.reply(C2S.ATTACK, { ok: false, reason: 'attack cooling down' });
+      return;
+    }
+    const reach = this._checkEntityReach(player, entity);
+    if (!reach.ok) {
+      session.reply(C2S.ATTACK, reach);
+      return;
+    }
+    session.lastAttackAt = now;
+    const result = this.entities.damage(entity.id, player.character.getStat('attack', now), {
+      attackerId: player.id,
+      from: player.position,
+      now,
+    });
+    const toolSlot = player.toolSlot();
+    if (toolSlot) {
+      player.equipment.damage(toolSlot, 1);
+      session.sendSelfState();
+    }
+    session.reply(C2S.ATTACK, { ...result, entity: entity.id });
+    this.broadcastNear(entity.position, S2C.ENTITY_ACTION, {
+      id: entity.id,
+      action: result.killed ? 'die' : 'hurt',
+      by: player.id,
+    });
+    this._syncEntitiesToSessions();
+  }
+
+  _handleInteractEntity(session, msg) {
+    const player = session.player;
+    const now = Date.now();
+    const entity = this.entities.get(msg.entity);
+    if (!entity) {
+      session.reply(C2S.INTERACT_ENTITY, { ok: false, reason: 'nothing there' });
+      return;
+    }
+    if (entity.state !== 'corpse') {
+      session.reply(C2S.INTERACT_ENTITY, { ok: false, reason: `the ${entity.def.name.toLowerCase()} ignores you` });
+      return;
+    }
+    const reach = this._checkEntityReach(player, entity);
+    if (!reach.ok) {
+      session.reply(C2S.INTERACT_ENTITY, reach);
+      return;
+    }
+    const result = this.entities.butcher(entity.id, player.toolContext(), { now, harvesterId: player.id });
+    const at = {
+      x: Math.floor(result.position.x),
+      y: Math.floor(result.position.y),
+      z: Math.floor(result.position.z),
+    };
+    const drops = this.interactions.awardDrops(player, result.drops, at, now);
+    session.reply(C2S.INTERACT_ENTITY, { ok: true, entity: entity.id, name: entity.def.name, drops });
+    session.sendSelfState();
+    if (drops.some((drop) => drop.to === 'ground')) {
+      this.broadcastNear(player.position, S2C.GROUND_ITEMS, { items: this.groundItems.near(result.position, 2) });
+    }
+    this._syncEntitiesToSessions();
+  }
+
+  _syncEntitiesToSessions() {
+    for (const session of this.sessions.values()) session.syncEntities();
+  }
+
+  /**
+   * Mob step: AI, physics, corpse rot, despawn far from players, spawning,
+   * then stream changes to each client.
+   * @param {number} [now]
+   */
+  tickEntities(now = Date.now()) {
+    const dt = Math.min(0.25, Math.max(0, (now - this._lastEntityTick) / 1000));
+    this._lastEntityTick = now;
+    const players = [];
+    for (const session of this.sessions.values()) {
+      if (session.player) players.push(session.player.position);
+    }
+    const despawnRadius = (this.options.viewDistance + 2) * 16;
+    const { removed } = this.entities.tick(dt, { now, keepNear: players, despawnRadius });
+    const spawned = this.options.spawnEntities ? this.spawner.tick(players, now) : [];
+    this._syncEntitiesToSessions();
+    return { removed: removed.length, spawned: spawned.length };
+  }
+
   _handleDrop(session, msg) {
     const player = session.player;
     const taken = player.inventory.removeFromSlot(msg.slot, msg.count ?? 1);
@@ -518,6 +664,17 @@ export class GameServer {
       }
     }, this.options.tickIntervalMs);
     this._tickTimer.unref?.();
+    if (this.options.entityTickMs > 0) {
+      this._lastEntityTick = Date.now();
+      this._entityTimer = setInterval(() => {
+        try {
+          this.tickEntities();
+        } catch (err) {
+          this.logger.error?.('[server] entity tick failed:', err);
+        }
+      }, this.options.entityTickMs);
+      this._entityTimer.unref?.();
+    }
     this.store?.startAutosave();
     return this;
   }
@@ -527,6 +684,10 @@ export class GameServer {
     if (this._tickTimer) {
       clearInterval(this._tickTimer);
       this._tickTimer = null;
+    }
+    if (this._entityTimer) {
+      clearInterval(this._entityTimer);
+      this._entityTimer = null;
     }
     for (const session of [...this.sessions.values()]) {
       session.send(S2C.ERROR, { reason: 'server shutting down' });

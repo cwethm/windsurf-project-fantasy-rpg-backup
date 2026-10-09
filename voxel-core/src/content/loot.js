@@ -12,10 +12,15 @@
  *  rolls    number of weighted draws (weighted mode only)
  *  entries  `{ item, min, max, weight, chance, requires }`
  *
- * `requires` may specify `toolClass`, `toolTier` and/or `knowledge`; entries
- * whose requirements are unmet are skipped, which is how "needs a pickaxe" and
- * "needs the masonry skill" conditional drops are expressed without code.
+ * `requires` may specify `toolClass`, `toolTier` and/or `knowledge`, which is
+ * how "needs a pickaxe" and "needs the masonry skill" conditional drops are
+ * expressed without code. An entry whose requirements are unmet is not simply
+ * skipped: it still drops the real item at `chance * unskilled`, and otherwise
+ * may produce its `ruined` item (a botched result) at `chance * ruinedChance`.
  */
+
+/** Default odds that a gated entry still drops for an unequipped, untrained harvester. */
+export const DEFAULT_UNSKILLED_CHANCE = 0.05;
 
 import { Registry } from '../core/registry.js';
 import { TOOL_CLASSES } from './blocks.js';
@@ -26,9 +31,12 @@ const entryDefaults = {
   weight: 1,
   chance: 1,
   requires: null,
+  unskilled: DEFAULT_UNSKILLED_CHANCE,
+  ruined: null,
+  ruinedChance: 0.5,
 };
 
-function entry(def) {
+export function lootEntry(def) {
   return { ...entryDefaults, ...def };
 }
 
@@ -37,7 +45,7 @@ function simpleTable(id, itemId, extra = {}) {
     id,
     mode: 'all',
     rolls: 1,
-    entries: [entry({ item: itemId, ...extra })],
+    entries: [lootEntry({ item: itemId, ...extra })],
   };
 }
 
@@ -55,23 +63,23 @@ export const LOOT_TABLES = [
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({ item: 'dirt' }),
-      entry({ item: 'seeds', chance: 0.125 }),
+      lootEntry({ item: 'dirt' }),
+      lootEntry({ item: 'seeds', chance: 0.125 }),
     ],
   },
   {
     id: 'tall_grass',
     mode: 'all',
     rolls: 1,
-    entries: [entry({ item: 'seeds', chance: 0.25 })],
+    entries: [lootEntry({ item: 'seeds', chance: 0.25 })],
   },
   {
     id: 'leaves',
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({ item: 'stick', chance: 0.2, min: 1, max: 2 }),
-      entry({ item: 'leaves', chance: 1, requires: { toolClass: TOOL_CLASSES.SHEARS } }),
+      lootEntry({ item: 'stick', chance: 0.2, min: 1, max: 2 }),
+      lootEntry({ item: 'leaves', chance: 1, requires: { toolClass: TOOL_CLASSES.SHEARS } }),
     ],
   },
   {
@@ -79,7 +87,7 @@ export const LOOT_TABLES = [
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({ item: 'cobblestone', requires: { toolClass: TOOL_CLASSES.PICKAXE, toolTier: 1 } }),
+      lootEntry({ item: 'cobblestone', requires: { toolClass: TOOL_CLASSES.PICKAXE, toolTier: 1 } }),
     ],
   },
   {
@@ -87,7 +95,7 @@ export const LOOT_TABLES = [
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({ item: 'cobblestone', requires: { toolClass: TOOL_CLASSES.PICKAXE, toolTier: 1 } }),
+      lootEntry({ item: 'cobblestone', requires: { toolClass: TOOL_CLASSES.PICKAXE, toolTier: 1 } }),
     ],
   },
   {
@@ -95,7 +103,7 @@ export const LOOT_TABLES = [
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({
+      lootEntry({
         item: 'coal',
         min: 1,
         max: 3,
@@ -108,7 +116,7 @@ export const LOOT_TABLES = [
     mode: 'all',
     rolls: 1,
     entries: [
-      entry({
+      lootEntry({
         item: 'iron_ore',
         requires: { toolClass: TOOL_CLASSES.PICKAXE, toolTier: 2 },
       }),
@@ -119,12 +127,14 @@ export const LOOT_TABLES = [
     mode: 'weighted',
     rolls: 3,
     entries: [
-      entry({ item: 'bread', weight: 5, min: 1, max: 3 }),
-      entry({ item: 'stick', weight: 4, min: 2, max: 6 }),
-      entry({ item: 'coal', weight: 3, min: 1, max: 4 }),
-      entry({ item: 'wooden_pickaxe', weight: 2 }),
-      entry({ item: 'leather_cap', weight: 1 }),
-      entry({ item: 'healing_potion', weight: 1 }),
+      lootEntry({ item: 'bread', weight: 5, min: 1, max: 3 }),
+      lootEntry({ item: 'stick', weight: 4, min: 2, max: 6 }),
+      lootEntry({ item: 'coal', weight: 3, min: 1, max: 4 }),
+      lootEntry({ item: 'wooden_pickaxe', weight: 2 }),
+      lootEntry({ item: 'leather_cap', weight: 1 }),
+      lootEntry({ item: 'healing_potion', weight: 1 }),
+      lootEntry({ item: 'flint_knife', weight: 2 }),
+      lootEntry({ item: 'butchers_primer', weight: 1 }),
     ],
   },
 ];
@@ -155,27 +165,40 @@ export function meetsRequirements(requires, context = {}) {
  */
 export function rollLootTable(table, rng, context = {}) {
   if (!table) return [];
-  const eligible = table.entries.filter((e) => meetsRequirements(e.requires, context));
-  if (eligible.length === 0) return [];
+  const candidates = [];
+  for (const e of table.entries) {
+    if (meetsRequirements(e.requires, context)) candidates.push({ entry: e, skilled: true });
+    else if ((e.unskilled ?? DEFAULT_UNSKILLED_CHANCE) > 0 || e.ruined) candidates.push({ entry: e, skilled: false });
+  }
+  if (candidates.length === 0) return [];
 
   /** @type {Map<string, number>} */
   const totals = new Map();
-  const award = (e) => {
+  const award = (item, e) => {
     const count = e.min === e.max ? e.min : rng.int(e.min, e.max);
     if (count <= 0) return;
-    totals.set(e.item, (totals.get(e.item) ?? 0) + count);
+    totals.set(item, (totals.get(item) ?? 0) + count);
+  };
+  const resolve = ({ entry: e, skilled }) => {
+    if (skilled) {
+      if (rng.chance(e.chance)) award(e.item, e);
+      return;
+    }
+    const roll = rng.next();
+    const real = e.chance * (e.unskilled ?? DEFAULT_UNSKILLED_CHANCE);
+    if (roll < real) award(e.item, e);
+    else if (e.ruined && roll < real + e.chance * (e.ruinedChance ?? 0)) award(e.ruined, e);
   };
 
   if (table.mode === 'weighted') {
     const rolls = Math.max(1, table.rolls ?? 1);
+    const weighted = candidates.map((c) => ({ ...c, weight: c.entry.weight }));
     for (let i = 0; i < rolls; i++) {
-      const picked = rng.pickWeighted(eligible);
-      if (picked && rng.chance(picked.chance)) award(picked);
+      const picked = rng.pickWeighted(weighted);
+      if (picked) resolve(picked);
     }
   } else {
-    for (const e of eligible) {
-      if (rng.chance(e.chance)) award(e);
-    }
+    for (const candidate of candidates) resolve(candidate);
   }
 
   return [...totals].map(([item, count]) => ({ item, count }));

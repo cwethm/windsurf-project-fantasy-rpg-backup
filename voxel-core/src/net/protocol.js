@@ -28,6 +28,8 @@ export const C2S = {
   SORT_INVENTORY: 'sort_inventory',
   EQUIP: 'equip',
   UNEQUIP: 'unequip',
+  ATTACK: 'attack',
+  INTERACT_ENTITY: 'interact_entity',
   CHAT: 'chat',
   PING: 'ping',
 };
@@ -49,6 +51,10 @@ export const S2C = {
   INVENTORY: 'inventory',
   CONTAINER: 'container',
   GROUND_ITEMS: 'ground_items',
+  ENTITY_ADD: 'entity_add',
+  ENTITY_UPDATE: 'entity_update',
+  ENTITY_REMOVE: 'entity_remove',
+  ENTITY_ACTION: 'entity_action',
   ACTION_RESULT: 'action_result',
   CHAT: 'chat',
   PONG: 'pong',
@@ -235,6 +241,11 @@ export function validate(msg) {
       }
       return { ok: true };
 
+    case C2S.ATTACK:
+    case C2S.INTERACT_ENTITY:
+      return typeof msg.entity === 'string' && msg.entity.length > 0 && msg.entity.length <= 64
+        ? { ok: true }
+        : { ok: false, reason: 'invalid entity id' };
     case C2S.PICKUP_ITEM:
       return typeof msg.id === 'string' && msg.id.length <= 64
         ? { ok: true }
