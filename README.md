@@ -75,30 +75,40 @@ A server-authoritative multiplayer voxel-based 3D MMO game built with Three.js (
 ## Installation & Setup
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.8 or higher, with the `venv` module (on Debian/Ubuntu: `sudo apt install python3-venv`)
 - Modern web browser with WebGL support
 
 ### Installation
 
-1. **Clone or setup the project:**
+Many Linux distributions (Debian 12+, Ubuntu 23.04+) block `pip install` into the
+system Python (`error: externally-managed-environment`, PEP 668), so install the
+dependencies into a virtual environment.
+
+1. **Clone the project:**
    ```bash
-   # If starting from this template
-   cd voxel-mmo
+   git clone https://github.com/cwethm/windsurf-project-fantasy-rpg-backup.git
+   cd windsurf-project-fantasy-rpg-backup
    ```
 
-2. **Install dependencies:**
+2. **Create a virtual environment and install dependencies:**
    ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate   # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
+   Use `.venv`, not the `venv/` folder checked into the repo: that one was
+   created on another machine and its `pip`/`python` paths will not work on yours.
 
 3. **Start the game servers:**
    ```bash
-   # Start server
+   # Terminal 1 - game server (ws://localhost:3001)
+   source .venv/bin/activate
    python3 server.py
-   
-   # In another terminal, start client
+
+   # Terminal 2 - static client server (no venv needed)
    cd client && python3 -m http.server 8080
    ```
+   Or use `./start_server.sh` and `./start_client.sh`.
 
 4. **Open your browser:**
    - Navigate to `http://localhost:8080`
