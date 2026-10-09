@@ -93,7 +93,9 @@ item's `use.action`. Adding an action is `registerAction(name, handler)`.
 | Containers — block state with inventory, open/close, transfer | ✅ | `src/game/containers.js` |
 | Respawn/regrow hooks for harvested nodes | ✅ | `block.regrow`, `World` regrowth queue + tick |
 | Permissions / land claims on interaction | 🔩 | validation is a single choke point; a claim check is one predicate |
-| NPC dialogue targets | 🔩 | target resolution returns blocks today; entity targets are the natural extension |
+| NPC dialogue targets | 🔩 | entities are targetable (`pickEntity`, `interact_entity`); dialogue is a new brain/interaction |
+| Mobs: form codes, spawn rules, wander/flee, click-to-hit, butcherable corpses | ✅ | `src/entity/`, `src/content/entities.js` |
+| Unskilled/ruined loot fallbacks | ✅ | `rollLootTable` (`unskilled`, `ruined`, `ruinedChance`) |
 
 ## 7. Character state
 
@@ -127,17 +129,17 @@ data-driven now:
 
 - **Crafting depth** — recipes are data plus a knowledge gate; `learn` and the
   knowledge set already exist.
-- **Mobs / AI** — needs an entity system alongside players; interest
-  management and state sync already generalise.
+- **More mobs / AI** — the entity system exists; next are more body plans
+  (predators, small creatures, birds, undead, humanoids), hostile brains and
+  regional population/carrying capacity.
 - **Combat depth** — damage types, resistances, hit detection.
 - **Claims / permissions** — one predicate inside `validateTarget`.
 - **Economy / trading** — inventory transfer ops already exist.
 
 ## Known gaps worth closing first
 
-1. **Entities beyond players.** Ground items are the only non-player entity.
-   Generalising to an entity registry would unlock mobs, projectiles and NPCs
-   on the existing sync path.
+1. **Entity persistence and more body plans.** Phase 1 mobs are not saved and
+   only the `Q` quadruped plan has a mesh builder.
 2. **Light propagation.** Blocks declare a `light` level that nothing
    currently propagates.
 3. **Chunk meshing off the main thread.** The reference client meshes

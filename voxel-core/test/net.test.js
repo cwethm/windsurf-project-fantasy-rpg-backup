@@ -603,3 +603,71 @@ test('equip and unequip verbs move items and broadcast the new look', async () =
   await session.handleRaw(encode(C2S.UNEQUIP, { equipSlot: 'main_hand' }));
   assert.equal(client.last(S2C.ACTION_RESULT).reason, 'nothing equipped');
 });
+
+test('attack and interact_entity messages need a sane entity id', () => {
+  assert.equal(validate({ t: C2S.ATTACK, entity: 'en_1' }).ok, true);
+  assert.equal(validate({ t: C2S.ATTACK }).ok, false);
+  assert.equal(validate({ t: C2S.INTERACT_ENTITY, entity: 'x'.repeat(65) }).ok, false);
+  assert.equal(validate({ t: C2S.INTERACT_ENTITY, entity: 7 }).ok, false);
+});
+
+test('entities stream to nearby sessions as add, update and remove', async () => {
+  const { server } = await makeServer({ spawnEntities: false });
+  const { client, session } = await connectAndLogin(server);
+  const { x, y, z } = session.player.position;
+  const cow = server.entities.spawn('cow', { x: x + 3, y, z });
+  server.tickEntities(Date.now());
+  const added = client.last(S2C.ENTITY_ADD).entities;
+  assert.equal(added.length, 1);
+  assert.equal(added[0].id, cow.id);
+  assert.equal(added[0].def, 'cow');
+  assert.equal(typeof added[0].seed, 'number');
+
+  server.entities.damage(cow.id, 1);
+  server.tickEntities(Date.now());
+  assert.equal(client.last(S2C.ENTITY_UPDATE).entities[0].health, cow.health);
+
+  server.entities.remove(cow.id);
+  server.tickEntities(Date.now());
+  assert.deepEqual(client.last(S2C.ENTITY_REMOVE).ids, [cow.id]);
+});
+
+test('click-to-hit respects reach and cooldown, and kills leave a butcherable corpse', async () => {
+  const { server } = await makeServer({ spawnEntities: false });
+  const { client, session } = await connectAndLogin(server);
+  const { client: watcher } = await connectAndLogin(server, 'player_two');
+  const { x, y, z } = session.player.position;
+  const far = server.entities.spawn('cow', { x: x + 12, y, z });
+  const cow = server.entities.spawn('sheep', { x: x + 1.5, y, z });
+
+  await session.handleRaw(encode(C2S.ATTACK, { entity: far.id }));
+  assert.equal(client.last(S2C.ACTION_RESULT).reason, 'out of reach');
+  await session.handleRaw(encode(C2S.ATTACK, { entity: 'en_missing' }));
+  assert.equal(client.last(S2C.ACTION_RESULT).reason, 'nothing to attack');
+
+  await session.handleRaw(encode(C2S.ATTACK, { entity: cow.id }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
+  assert.equal(client.last(S2C.ACTION_RESULT).detail.damage, 1);
+  assert.equal(watcher.last(S2C.ENTITY_ACTION).action, 'hurt');
+  await session.handleRaw(encode(C2S.ATTACK, { entity: cow.id }));
+  assert.equal(client.last(S2C.ACTION_RESULT).reason, 'attack cooling down');
+
+  await session.handleRaw(encode(C2S.INTERACT_ENTITY, { entity: cow.id }));
+  assert.match(client.last(S2C.ACTION_RESULT).reason, /ignores you/);
+
+  while (cow.state === 'alive') {
+    session.lastAttackAt = 0;
+    await session.handleRaw(encode(C2S.ATTACK, { entity: cow.id }));
+  }
+  assert.equal(client.last(S2C.ACTION_RESULT).detail.killed, true);
+  assert.equal(watcher.last(S2C.ENTITY_ACTION).action, 'die');
+
+  await session.handleRaw(encode(C2S.INTERACT_ENTITY, { entity: cow.id }));
+  const result = client.last(S2C.ACTION_RESULT);
+  assert.equal(result.ok, true);
+  assert.equal(result.detail.name, 'Sheep');
+  assert.ok(result.detail.drops.some((d) => d.item === 'bone'));
+  assert.ok(session.player.inventory.countOf('bone') >= 1);
+  assert.equal(server.entities.get(cow.id), null);
+  assert.ok(client.last(S2C.ENTITY_REMOVE).ids.includes(cow.id));
+});

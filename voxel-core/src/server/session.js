@@ -36,6 +36,9 @@ export class Session {
     this.account = null;
     this.limiter = new RateLimiter(server.options.rateLimits);
     this.lastMoveAt = Date.now();
+    this.lastAttackAt = 0;
+    /** @type {Map<string, number>} entity id -> last version sent */
+    this.knownEntities = new Map();
     this.closed = false;
   }
 
@@ -117,6 +120,7 @@ export class Session {
     this.syncChunks();
     this.send(S2C.SELF_STATE, player.toSelfState());
     this.sendGroundItems();
+    this.syncEntities();
 
     for (const other of this.server.sessions.values()) {
       if (other === this || !other.player) continue;
@@ -161,6 +165,35 @@ export class Session {
     const radius = this.player.viewDistance * 16;
     const items = this.server.groundItems.near(this.player.position, radius);
     this.send(S2C.GROUND_ITEMS, { items });
+  }
+
+  /**
+   * Tell the client about entities entering, changing inside, and leaving its
+   * interest radius since the last sync.
+   */
+  syncEntities() {
+    if (!this.player) return;
+    const manager = this.server.entities;
+    const near = manager.near(this.player.position, this.player.viewDistance * 16);
+    const added = [];
+    const updated = [];
+    const seen = new Set();
+    for (const entity of near) {
+      seen.add(entity.id);
+      const known = this.knownEntities.get(entity.id);
+      if (known === undefined) added.push(manager.toNetworkState(entity));
+      else if (known !== entity.version) updated.push(manager.toNetworkState(entity));
+      this.knownEntities.set(entity.id, entity.version);
+    }
+    const removed = [];
+    for (const id of this.knownEntities.keys()) {
+      if (seen.has(id)) continue;
+      removed.push(id);
+      this.knownEntities.delete(id);
+    }
+    if (added.length) this.send(S2C.ENTITY_ADD, { entities: added });
+    if (updated.length) this.send(S2C.ENTITY_UPDATE, { entities: updated });
+    if (removed.length) this.send(S2C.ENTITY_REMOVE, { ids: removed });
   }
 
   /** Push the owning client's full state (inventory, stats, equipment). */

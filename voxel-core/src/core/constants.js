@@ -54,3 +54,5 @@ export const GROUND_ITEM_TTL = 300;
 
 /** How long the harvesting player has exclusive pickup rights, in seconds. */
 export const GROUND_ITEM_OWNER_WINDOW = 15;
+export const ATTACK_COOLDOWN_MS = 500;
+export const CORPSE_TTL = 300;

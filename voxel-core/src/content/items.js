@@ -190,6 +190,31 @@ export const ITEM_DEFINITIONS = [
     stats: { defense: 2 },
     use: { action: USE_ACTIONS.EQUIP },
   }),
+  item({
+    id: 'flint_knife',
+    name: 'Flint Knife',
+    maxStack: 1,
+    equipSlot: 'main_hand',
+    durability: 60,
+    toolClass: TOOL_CLASSES.KNIFE,
+    toolTier: 1,
+    stats: { attack: 1 },
+    use: { action: USE_ACTIONS.EQUIP },
+  }),
+  item({ id: 'raw_beef', name: 'Raw Beef', maxStack: 32 }),
+  item({ id: 'raw_mutton', name: 'Raw Mutton', maxStack: 32 }),
+  item({ id: 'raw_venison', name: 'Raw Venison', maxStack: 32 }),
+  item({ id: 'hide', name: 'Hide', maxStack: 16 }),
+  item({ id: 'wool', name: 'Wool', maxStack: 64 }),
+  item({ id: 'bone', name: 'Bone', maxStack: 64 }),
+  item({ id: 'horn', name: 'Horn', maxStack: 16 }),
+  item({ id: 'antler', name: 'Antler', maxStack: 16 }),
+  // Ruined results of unskilled butchering: kept as items so players can see
+  // what went wrong, but nothing consumes them.
+  item({ id: 'mangled_meat', name: 'Mangled Meat', maxStack: 32 }),
+  item({ id: 'tattered_hide', name: 'Tattered Hide', maxStack: 16 }),
+  item({ id: 'matted_wool', name: 'Matted Wool', maxStack: 64 }),
+  item({ id: 'bone_shards', name: 'Bone Shards', maxStack: 64 }),
 ];
 
 /**

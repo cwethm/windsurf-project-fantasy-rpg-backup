@@ -11,18 +11,22 @@ import { createBlockRegistry, BLOCK_IDS, TOOL_CLASSES } from './blocks.js';
 import { createItemRegistry, USE_ACTIONS } from './items.js';
 import { createLootRegistry, rollLootTable } from './loot.js';
 import { createBiomeRegistry, selectBiome } from './biomes.js';
+import { createEntityRegistry, createSpawnRuleRegistry, ENTITY_LOOT_TABLES } from './entities.js';
+import { parseFormCode } from '../entity/form-code.js';
 
 export { BLOCK_IDS, TOOL_CLASSES, USE_ACTIONS, rollLootTable, selectBiome };
 
 export class Content {
   /**
-   * @param {{ blocks?: object[], items?: object[], loot?: object[], biomes?: object[] }} [extra]
+   * @param {{ blocks?: object[], items?: object[], loot?: object[], biomes?: object[], entities?: object[], spawnRules?: object[] }} [extra]
    */
   constructor(extra = {}) {
     this.blocks = createBlockRegistry(extra.blocks ?? []);
     this.items = createItemRegistry(extra.items ?? []);
-    this.loot = createLootRegistry(extra.loot ?? []);
+    this.loot = createLootRegistry([...ENTITY_LOOT_TABLES, ...(extra.loot ?? [])]);
     this.biomes = createBiomeRegistry(extra.biomes ?? []);
+    this.entities = createEntityRegistry(extra.entities ?? []);
+    this.spawnRules = createSpawnRuleRegistry(extra.spawnRules ?? []);
     this._rebuildIndexes();
   }
 
@@ -49,6 +53,9 @@ export class Content {
         if (!this.items.has(lootEntry.item)) {
           throw new Error(`loot table "${table.id}" drops unknown item "${lootEntry.item}"`);
         }
+        if (lootEntry.ruined && !this.items.has(lootEntry.ruined)) {
+          throw new Error(`loot table "${table.id}" ruins into unknown item "${lootEntry.ruined}"`);
+        }
       }
     }
     for (const biomeDef of this.biomes.all()) {
@@ -63,6 +70,31 @@ export class Content {
         }
       }
     }
+    for (const entityDef of this.entities.all()) {
+      try {
+        parseFormCode(entityDef.form);
+      } catch (err) {
+        throw new Error(`entity "${entityDef.id}" has an invalid form code: ${err.message}`);
+      }
+      if (entityDef.harvest && !this.loot.has(entityDef.harvest)) {
+        throw new Error(`entity "${entityDef.id}" references unknown loot table "${entityDef.harvest}"`);
+      }
+    }
+    for (const rule of this.spawnRules.all()) {
+      if (!this.entities.has(rule.entity)) {
+        throw new Error(`spawn rule "${rule.id}" spawns unknown entity "${rule.entity}"`);
+      }
+      for (const biomeId of rule.biomes) {
+        if (biomeId !== '*' && !this.biomes.has(biomeId)) {
+          throw new Error(`spawn rule "${rule.id}" references unknown biome "${biomeId}"`);
+        }
+      }
+      for (const blockName of rule.surface) {
+        if (!this.blocks.getByName(blockName)) {
+          throw new Error(`spawn rule "${rule.id}" references unknown block "${blockName}"`);
+        }
+      }
+    }
   }
 
   /** Freeze every registry once content loading is finished. */
@@ -71,6 +103,8 @@ export class Content {
     this.items.freeze();
     this.loot.freeze();
     this.biomes.freeze();
+    this.entities.freeze();
+    this.spawnRules.freeze();
     return this;
   }
 

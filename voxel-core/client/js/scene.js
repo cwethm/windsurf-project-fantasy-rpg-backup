@@ -11,6 +11,7 @@ import { CHUNK_SIZE } from '/src/core/constants.js';
 import { chunkKey } from '/src/world/coords.js';
 import { PlayerAvatar, updateBillboards } from './player-avatar.js';
 import { ChunkMesher } from './chunk-mesher.js';
+import { EntityView } from './entity-view.js';
 
 const SKY_COLOR = 0x8fc0e8;
 /** Chunks remeshed per frame; keeps a burst of arrivals from stalling input. */
@@ -48,6 +49,8 @@ export class SceneView {
     this.avatars = new Map();
     /** @type {Map<string, THREE.Mesh>} */
     this.groundItems = new Map();
+    /** @type {Map<string, EntityView>} */
+    this.entities = new Map();
 
     this.highlight = makeHighlight();
     this.highlight.visible = false;
@@ -164,6 +167,49 @@ export class SceneView {
     this.avatars.get(state.id)?.applyState(state);
   }
 
+  // ------------------------------------------------------------- entities
+
+  /** @param {object[]} states */
+  addEntities(states = []) {
+    for (const state of states) {
+      const existing = this.entities.get(state.id);
+      if (existing) {
+        existing.applyState(state, true);
+        continue;
+      }
+      const def = this.content.entities.get(state.def);
+      if (!def) continue;
+      const view = new EntityView(state, def);
+      this.scene.add(view.root);
+      this.entities.set(state.id, view);
+    }
+  }
+
+  /** @param {object[]} states */
+  updateEntities(states = []) {
+    for (const state of states) {
+      const view = this.entities.get(state.id);
+      if (view) view.applyState(state);
+      else this.addEntities([state]);
+    }
+  }
+
+  /** @param {string[]} ids */
+  removeEntities(ids = []) {
+    for (const id of ids) {
+      const view = this.entities.get(id);
+      if (!view) continue;
+      this.scene.remove(view.root);
+      view.dispose();
+      this.entities.delete(id);
+    }
+  }
+
+  /** @param {{ id: string, action: string }} payload */
+  entityAction({ id, action }) {
+    this.entities.get(id)?.playAction(action);
+  }
+
   // --------------------------------------------------------- ground items
 
   /** @param {Array<object>} items */
@@ -225,6 +271,7 @@ export class SceneView {
     for (const [id, avatar] of this.avatars) {
       avatar.update(dt, { interpolate: id !== localId, speed: id === localId ? localSpeed : null });
     }
+    for (const view of this.entities.values()) view.update(dt);
     const spin = performance.now() / 1000;
     for (const mesh of this.groundItems.values()) {
       mesh.rotation.y = spin;

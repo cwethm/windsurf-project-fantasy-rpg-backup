@@ -34,6 +34,7 @@ export const TOOL_CLASSES = {
   AXE: 'axe',
   SHOVEL: 'shovel',
   SHEARS: 'shears',
+  KNIFE: 'knife',
 };
 
 /** Convenience numeric ids so engine code can spell out air/water readably. */
