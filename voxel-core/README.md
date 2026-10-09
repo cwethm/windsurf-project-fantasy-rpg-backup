@@ -248,7 +248,14 @@ the brief asks for:
 
 Controls: `WASD` move, `Space` jump, `Shift` run, `LMB` harvest, `RMB`
 place/use, `E` interact, `Q` drop, `R` sort, `1`–`9` quickbar, `C` crosshair,
-`V` view, `T` chat.
+`V` view, `T` chat, `I`/`Tab` inventory.
+
+The inventory panel shows the 36-slot inventory, the six equipment slots with
+derived stats, and an open chest side by side. Drag stacks between slots (or
+onto Trash), `Shift`+click to quick-move into the open chest or equip,
+right-click to split a stack and `Ctrl`+click to lock a slot. Every gesture is
+a protocol verb (`move_item`, `equip`, `unequip`, `transfer_item`, …); the
+server re-validates it and replies with fresh state.
 
 ---
 

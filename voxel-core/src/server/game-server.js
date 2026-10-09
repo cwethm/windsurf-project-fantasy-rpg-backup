@@ -292,6 +292,14 @@ export class GameServer {
       session.player.inventory.sort();
       session.sendSelfState();
     });
+    h.register(C2S.EQUIP, (session, msg) => {
+      const result = session.player.equipFromSlot(msg.slot);
+      this._afterEquipmentChange(session, C2S.EQUIP, result);
+    });
+    h.register(C2S.UNEQUIP, (session, msg) => {
+      const result = session.player.unequipToInventory(msg.equipSlot, msg.to ?? null);
+      this._afterEquipmentChange(session, C2S.UNEQUIP, result);
+    });
     h.register(C2S.DROP_ITEM, (session, msg) => this._handleDrop(session, msg));
     h.register(C2S.PICKUP_ITEM, (session, msg) => {
       const result = this.groundItems.pickup(msg.id, session.player);
@@ -400,6 +408,15 @@ export class GameServer {
     this.bus.emit(EVENTS.PLAYER_MOVED, { playerId: player.id, position: player.position });
   }
 
+  _afterEquipmentChange(session, action, result) {
+    session.reply(action, result);
+    if (!result.ok) return;
+    session.sendSelfState();
+    this.broadcastNear(session.player.position, S2C.PLAYER_UPDATE, session.player.toNetworkState(), {
+      exclude: session,
+    });
+  }
+
   _handleDrop(session, msg) {
     const player = session.player;
     const taken = player.inventory.removeFromSlot(msg.slot, msg.count ?? 1);
@@ -443,8 +460,8 @@ export class GameServer {
 
     const result =
       msg.direction === 'to_container'
-        ? transferStack(player.inventory, msg.slot, handle.inventory, msg.count ?? null)
-        : transferStack(handle.inventory, msg.slot, player.inventory, msg.count ?? null);
+        ? transferStack(player.inventory, msg.slot, handle.inventory, msg.count ?? null, msg.to ?? null)
+        : transferStack(handle.inventory, msg.slot, player.inventory, msg.count ?? null, msg.to ?? null);
     if (result.ok) handle.save();
 
     session.reply(C2S.TRANSFER_ITEM, result);

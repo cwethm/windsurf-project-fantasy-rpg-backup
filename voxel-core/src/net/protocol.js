@@ -26,6 +26,8 @@ export const C2S = {
   LOCK_SLOT: 'lock_slot',
   CLOSE_CONTAINER: 'close_container',
   SORT_INVENTORY: 'sort_inventory',
+  EQUIP: 'equip',
+  UNEQUIP: 'unequip',
   CHAT: 'chat',
   PING: 'ping',
 };
@@ -215,6 +217,21 @@ export function validate(msg) {
       if (!Number.isInteger(msg.slot)) return { ok: false, reason: 'invalid slot' };
       if (msg.direction !== 'to_container' && msg.direction !== 'to_player') {
         return { ok: false, reason: 'invalid direction' };
+      }
+      if (msg.to !== undefined && msg.to !== null && !Number.isInteger(msg.to)) {
+        return { ok: false, reason: 'invalid slot' };
+      }
+      return { ok: true };
+
+    case C2S.EQUIP:
+      return Number.isInteger(msg.slot) ? { ok: true } : { ok: false, reason: 'invalid slot' };
+
+    case C2S.UNEQUIP:
+      if (typeof msg.equipSlot !== 'string' || msg.equipSlot.length === 0 || msg.equipSlot.length > 32) {
+        return { ok: false, reason: 'invalid equipment slot' };
+      }
+      if (msg.to !== undefined && msg.to !== null && !Number.isInteger(msg.to)) {
+        return { ok: false, reason: 'invalid slot' };
       }
       return { ok: true };
 

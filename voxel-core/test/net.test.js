@@ -87,6 +87,14 @@ test('inventory and container payloads are validated', () => {
   assert.equal(validate({ t: C2S.TRASH_ITEM, slot: 'three' }).ok, false);
   assert.equal(validate({ t: C2S.LOCK_SLOT, slot: 3 }).ok, true);
   assert.equal(validate({ t: C2S.CHAT, text: '   ' }).ok, false);
+  assert.equal(validate({ t: C2S.EQUIP, slot: 2 }).ok, true);
+  assert.equal(validate({ t: C2S.EQUIP, slot: '2' }).ok, false);
+  assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: 'head', to: 4 }).ok, true);
+  assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: 'head' }).ok, true);
+  assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: '' }).ok, false);
+  assert.equal(validate({ t: C2S.UNEQUIP, equipSlot: 'head', to: 1.5 }).ok, false);
+  assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'to_player', to: 3 }).ok, true);
+  assert.equal(validate({ t: C2S.TRANSFER_ITEM, slot: 0, direction: 'to_player', to: 'x' }).ok, false);
 });
 
 // ------------------------------------------------------------ rate limiter
@@ -573,4 +581,25 @@ test('locking a slot survives a round trip to the client', async () => {
 
   await session.handleRaw(encode(C2S.LOCK_SLOT, { slot: 9999 }));
   assert.equal(client.last(S2C.ACTION_RESULT).ok, false);
+});
+
+test('equip and unequip verbs move items and broadcast the new look', async () => {
+  const { server } = await makeServer();
+  const { client, session } = await connectAndLogin(server);
+  const { client: watcher } = await connectAndLogin(server, 'player_two');
+  const slot = session.player.inventory.slots.findIndex((stack) => stack?.item === 'wooden_pickaxe');
+
+  await session.handleRaw(encode(C2S.EQUIP, { slot }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
+  assert.equal(client.last(S2C.SELF_STATE).equipmentSlots.main_hand.item, 'wooden_pickaxe');
+  assert.equal(client.last(S2C.SELF_STATE).inventory.slots[slot], null);
+  assert.equal(watcher.last(S2C.PLAYER_UPDATE).equipment.main_hand, 'wooden_pickaxe');
+
+  await session.handleRaw(encode(C2S.UNEQUIP, { equipSlot: 'main_hand', to: 20 }));
+  assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
+  assert.equal(client.last(S2C.SELF_STATE).inventory.slots[20].item, 'wooden_pickaxe');
+  assert.equal(client.last(S2C.SELF_STATE).equipmentSlots.main_hand, null);
+
+  await session.handleRaw(encode(C2S.UNEQUIP, { equipSlot: 'main_hand' }));
+  assert.equal(client.last(S2C.ACTION_RESULT).reason, 'nothing equipped');
 });

@@ -124,11 +124,14 @@ export class Controls {
       KeyQ: 'drop',
       KeyT: 'chat',
       KeyR: 'sort',
+      KeyI: 'toggle_inventory',
+      Tab: 'toggle_inventory',
       Escape: 'cancel',
     };
     const action = actions[event.code];
     if (action) {
-      if (action === 'chat') event.preventDefault();
+      if (action === 'chat' || event.code === 'Tab') event.preventDefault();
+      if (event.repeat && action === 'toggle_inventory') return;
       this.onAction(action);
     }
   }

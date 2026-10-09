@@ -44,7 +44,41 @@
       <div class="hints">
         <kbd>WASD</kbd> move · <kbd>Space</kbd> jump · <kbd>Shift</kbd> run ·
         <kbd>LMB</kbd> harvest · <kbd>RMB</kbd> place/use · <kbd>E</kbd> interact ·
-        <kbd>C</kbd> crosshair · <kbd>V</kbd> view · <kbd>T</kbd> chat · <kbd>1-9</kbd> slots
+        <kbd>C</kbd> crosshair · <kbd>V</kbd> view · <kbd>T</kbd> chat · <kbd>1-9</kbd> slots ·
+        <kbd>I</kbd>/<kbd>Tab</kbd> inventory
+      </div>
+    </div>
+
+    <div id="inventory-panel" class="inventory-panel" hidden>
+      <div class="inventory-window">
+        <section class="inv-column inv-equipment">
+          <h2>Equipment</h2>
+          <div id="equipment-slots" class="equipment-slots"></div>
+          <h3>Stats</h3>
+          <div id="equipment-stats" class="equipment-stats"></div>
+        </section>
+
+        <section class="inv-column">
+          <h2>Inventory</h2>
+          <div id="inventory-grid" class="slot-grid"></div>
+          <h3>Quickbar</h3>
+          <div id="inventory-quickbar" class="slot-grid"></div>
+          <div class="inv-footer">
+            <div id="trash-slot" class="slot trash" title="Drop a stack here to destroy it">Trash</div>
+            <p class="inv-help">
+              Drag to move · <kbd>Shift</kbd>+click quick move/equip · Right-click split ·
+              <kbd>Ctrl</kbd>+click lock
+            </p>
+          </div>
+          <p id="inventory-message" class="inv-message" role="status"></p>
+        </section>
+
+        <section id="container-section" class="inv-column" hidden>
+          <h2>Chest</h2>
+          <div id="container-grid" class="slot-grid"></div>
+        </section>
+
+        <button type="button" id="inventory-close" class="inv-close" aria-label="Close inventory">&times;</button>
       </div>
     </div>
 

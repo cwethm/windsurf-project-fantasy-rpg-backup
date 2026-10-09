@@ -33,6 +33,8 @@ const { TargetResolver } = await import('../client/js/targeting.js');
 const { defaultUrl } = await import('../client/js/net.js');
 const { wrapAngle } = await import('../client/js/controls.js');
 const { ChunkMesher } = await import('../client/js/chunk-mesher.js');
+const { planSlotAction, quickSlotAction, fitsEquipSlot, AREAS } = await import('../client/js/inventory-panel.js');
+const { C2S, validate } = await import('../src/net/protocol.js');
 const { createContent } = await import('../src/content/index.js');
 const { Chunk } = await import('../src/world/chunk.js');
 const { CHUNK_SIZE } = await import('../src/core/constants.js');
@@ -468,5 +470,66 @@ test('client utilities', async (t) => {
     assert.equal(defaultUrl(), 'ws://localhost:8080');
     if (original === undefined) delete globalThis.location;
     else globalThis.location = original;
+  });
+});
+
+test('inventory panel gesture planning', async (t) => {
+  const inv = (index) => ({ area: AREAS.INVENTORY, index });
+  const box = (index) => ({ area: AREAS.CONTAINER, index });
+  const equip = (slot) => ({ area: AREAS.EQUIPMENT, slot });
+
+  await t.test('drags map onto protocol verbs', () => {
+    assert.deepEqual(planSlotAction(inv(2), inv(7)), { type: C2S.MOVE_ITEM, payload: { from: 2, to: 7 } });
+    assert.equal(planSlotAction(inv(2), inv(2)), null);
+    assert.deepEqual(planSlotAction(inv(4), equip('head')), { type: C2S.EQUIP, payload: { slot: 4 } });
+    assert.deepEqual(planSlotAction(equip('head'), inv(9)), {
+      type: C2S.UNEQUIP,
+      payload: { equipSlot: 'head', to: 9 },
+    });
+    assert.deepEqual(planSlotAction(inv(1), box(0)), {
+      type: C2S.TRANSFER_ITEM,
+      payload: { slot: 1, direction: 'to_container', to: 0 },
+    });
+    assert.deepEqual(planSlotAction(box(3), inv(0)), {
+      type: C2S.TRANSFER_ITEM,
+      payload: { slot: 3, direction: 'to_player', to: 0 },
+    });
+    assert.deepEqual(planSlotAction(inv(5), { area: AREAS.TRASH }), { type: C2S.TRASH_ITEM, payload: { slot: 5 } });
+    assert.equal(planSlotAction(box(0), box(1)), null);
+    assert.equal(planSlotAction(equip('head'), { area: AREAS.TRASH }), null);
+    assert.equal(planSlotAction(null, inv(0)), null);
+  });
+
+  await t.test('quick actions prefer the open chest, then equipping', () => {
+    const equipSlotOf = (index) => (index === 0 ? 'main_hand' : null);
+    assert.equal(quickSlotAction(inv(0), { containerOpen: true, equipSlotOf }).type, C2S.TRANSFER_ITEM);
+    assert.equal(quickSlotAction(inv(0), { containerOpen: false, equipSlotOf }).type, C2S.EQUIP);
+    assert.equal(quickSlotAction(inv(1), { containerOpen: false, equipSlotOf }), null);
+    assert.deepEqual(quickSlotAction(equip('chest'), { containerOpen: false, equipSlotOf }).payload, {
+      equipSlot: 'chest',
+      to: null,
+    });
+    assert.equal(quickSlotAction(box(2), { containerOpen: true, equipSlotOf }).payload.direction, 'to_player');
+  });
+
+  await t.test('equipment drop highlighting follows the item definition', () => {
+    assert.equal(fitsEquipSlot(content, { item: 'leather_cap', count: 1 }, 'head'), true);
+    assert.equal(fitsEquipSlot(content, { item: 'leather_cap', count: 1 }, 'chest'), false);
+    assert.equal(fitsEquipSlot(content, null, 'head'), false);
+  });
+
+  await t.test('every planned message passes protocol validation', () => {
+    const planned = [
+      planSlotAction(inv(2), inv(7)),
+      planSlotAction(inv(4), equip('head')),
+      planSlotAction(equip('head'), inv(9)),
+      planSlotAction(inv(1), box(0)),
+      planSlotAction(box(3), inv(0)),
+      planSlotAction(inv(5), { area: AREAS.TRASH }),
+      quickSlotAction(equip('chest'), { containerOpen: false, equipSlotOf: () => null }),
+    ];
+    for (const { type, payload } of planned) {
+      assert.equal(validate({ t: type, ...payload }).ok, true, type);
+    }
   });
 });
