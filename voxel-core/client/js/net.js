@@ -6,7 +6,7 @@
  * subscription: `net.on(S2C.CHUNK, fn)`.
  */
 
-import { C2S, S2C, encode, decode, PROTOCOL_VERSION } from '/src/net/protocol.js';
+import { C2S, S2C, encode, decode, PROTOCOL_VERSION, MAX_SERVER_MESSAGE_BYTES } from '/src/net/protocol.js';
 
 export { C2S, S2C };
 
@@ -73,7 +73,7 @@ export class NetClient {
       });
 
       socket.addEventListener('message', (event) => {
-        const result = decode(event.data);
+        const result = decode(event.data, { maxBytes: MAX_SERVER_MESSAGE_BYTES });
         if (!result.ok) {
           console.warn('[net] dropped frame:', result.reason);
           return;

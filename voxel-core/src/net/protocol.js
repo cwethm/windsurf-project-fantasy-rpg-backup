@@ -70,6 +70,12 @@ export const PROTOCOL_VERSION = 1;
 export const MAX_MESSAGE_BYTES = 16 * 1024;
 
 /**
+ * Cap on a server-to-client frame. A heavily edited chunk can RLE-encode far
+ * past `MAX_MESSAGE_BYTES`, and the server is trusted.
+ */
+export const MAX_SERVER_MESSAGE_BYTES = 1024 * 1024;
+
+/**
  * Build a message object.
  * @param {string} type
  * @param {object} [payload]
@@ -90,11 +96,12 @@ export function encode(type, payload = {}) {
  * frame is an expected event on a public server, not an exception.
  *
  * @param {string|Uint8Array} raw
+ * @param {{ maxBytes?: number }} [options]
  * @returns {{ ok: true, message: object } | { ok: false, reason: string }}
  */
-export function decode(raw) {
+export function decode(raw, { maxBytes = MAX_MESSAGE_BYTES } = {}) {
   const text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
-  if (text.length > MAX_MESSAGE_BYTES) return { ok: false, reason: 'message too large' };
+  if (text.length > maxBytes) return { ok: false, reason: 'message too large' };
 
   let parsed;
   try {
