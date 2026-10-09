@@ -64,9 +64,10 @@ export class Spawner {
     this._lastSpawnAt = now;
     const spawned = [];
     for (const player of players) {
-      if (this.entities.aliveNear(player, this.options.radius).length >= this.options.cap) continue;
+      const room = this.options.cap - this.entities.aliveNear(player, this.options.radius).length;
+      if (room <= 0) continue;
       for (let i = 0; i < this.options.attempts; i++) {
-        const group = this._trySpawnNear(player, now);
+        const group = this._trySpawnNear(player, now, room);
         if (group.length > 0) {
           spawned.push(...group);
           break;
@@ -76,7 +77,7 @@ export class Spawner {
     return spawned;
   }
 
-  _trySpawnNear(player, now) {
+  _trySpawnNear(player, now, room) {
     const { minDistance, radius } = this.options;
     const angle = this.rng.range(0, Math.PI * 2);
     const distance = this.rng.range(minDistance, radius);
@@ -87,7 +88,7 @@ export class Spawner {
     const rules = this.rulesAt(x, z);
     if (rules.length === 0) return [];
     const rule = this.rng.pickWeighted(rules.map((r) => ({ rule: r, weight: RARITY_WEIGHTS[r.rarity] }))).rule;
-    return this.spawnGroup(rule, x, z, now);
+    return this.spawnGroup(rule, x, z, now, room);
   }
 
   /**
@@ -95,15 +96,17 @@ export class Spawner {
    * @param {object} rule
    * @param {number} x @param {number} z
    * @param {number} [now]
+   * @param {number} [max] most members to place
    */
-  spawnGroup(rule, x, z, now = Date.now()) {
+  spawnGroup(rule, x, z, now = Date.now(), max = Infinity) {
     const isSolid = (bx, by, bz) => this.world.isSolid(bx, by, bz);
-    const count = this.rng.int(rule.group[0], rule.group[1]);
+    const count = Math.min(max, this.rng.int(rule.group[0], rule.group[1]));
     const out = [];
     for (let i = 0; i < count; i++) {
       const gx = x + this.rng.int(-3, 3);
       const gz = z + this.rng.int(-3, 3);
       if (!this.world.isLoaded(blockToChunk(gx), blockToChunk(gz))) continue;
+      if (!this.rulesAt(gx, gz).includes(rule)) continue;
       const surface = this.world.surfacePosition(gx, gz);
       const y = resolveSpawnY(isSolid, surface.x, surface.z, surface.y);
       out.push(this.entities.spawn(rule.entity, { x: surface.x, y, z: surface.z }, { now }));

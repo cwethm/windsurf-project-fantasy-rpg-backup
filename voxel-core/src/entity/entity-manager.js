@@ -16,6 +16,9 @@ import { rollLootTable } from '../content/loot.js';
 import { resolveForm, formDimensions } from './form-code.js';
 import { BRAINS } from './brains.js';
 
+/** Longest physics step, so fast movers cannot skip through a block between ticks. */
+const MAX_PHYSICS_STEP = 0.05;
+
 let nextId = 1;
 
 export class EntityManager {
@@ -228,14 +231,16 @@ export class EntityManager {
       entity.anim = wantX || wantZ ? intent.anim : intent?.anim === 'graze' ? 'graze' : 'idle';
     }
 
-    entity.velocity.x = wantX;
-    entity.velocity.z = wantZ;
-    const result = stepPhysics(
-      { position: entity.position, velocity: entity.velocity },
-      { dt, isSolid, width: entity.dims.width, height: entity.dims.height },
-    );
-    const blocked = (wantX !== 0 && result.velocity.x === 0) || (wantZ !== 0 && result.velocity.z === 0);
-    if (blocked && result.onGround) result.velocity.y = JUMP_VELOCITY * 0.9;
+    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP));
+    let result = { position: entity.position, velocity: entity.velocity, onGround: entity.onGround };
+    for (let i = 0; i < steps; i++) {
+      result = stepPhysics(
+        { position: result.position, velocity: { x: wantX, y: result.velocity.y, z: wantZ } },
+        { dt: dt / steps, isSolid, width: entity.dims.width, height: entity.dims.height },
+      );
+      const blocked = (wantX !== 0 && result.velocity.x === 0) || (wantZ !== 0 && result.velocity.z === 0);
+      if (blocked && result.onGround) result.velocity.y = JUMP_VELOCITY * 0.9;
+    }
     entity.position = result.position;
     entity.velocity = result.velocity;
     entity.onGround = result.onGround;

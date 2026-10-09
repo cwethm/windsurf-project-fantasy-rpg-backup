@@ -254,15 +254,24 @@ test('spawner places groups from matching rules and respects the local cap', () 
   const manager = new EntityManager({ content, world, seed: 'spawn' });
   const spawner = new Spawner({ content, world, entities: manager, seed: 's', options: { cap: 5, radius: 24, minDistance: 8, intervalMs: 0 } });
   const rules = spawner.rulesAt(4, 4);
+  assert.ok(rules.length > 0);
   assert.ok(rules.every((r) => r.surface.includes('grass')));
 
-  const forced = spawner.spawnGroup(content.spawnRules.get('meadow_sheep'), 4, 4, 0);
-  assert.ok(forced.length >= 3 && forced.length <= 5);
+  const rule = rules[0];
+  const forced = spawner.spawnGroup(rule, 4, 4, 0);
+  assert.ok(forced.length >= rule.group[0] && forced.length <= rule.group[1]);
+  assert.equal(spawner.spawnGroup(rule, 4, 4, 0, 1).length, 1, 'max caps the group');
+  world.setBlock(30, 9, 30, BLOCK_IDS.STONE);
+  for (let i = 0; i < 20; i++) {
+    for (const e of spawner.spawnGroup(rule, 30, 30, 0)) assert.ok(!(Math.floor(e.position.x) === 30 && Math.floor(e.position.z) === 30));
+  }
   for (const sheep of forced) assert.ok(Math.abs(sheep.position.y - 10) < 1e-9);
 
+  for (const e of manager.all()) manager.remove(e.id);
   let now = 0;
   for (let i = 0; i < 50; i++) spawner.tick([{ x: 0, z: 0 }], (now += 1000));
-  assert.ok(manager.aliveNear({ x: 0, z: 0 }, 24).length <= 5 + 5, 'cap stops spawning once reached');
+  const alive = manager.aliveNear({ x: 0, z: 0 }, 24).length;
+  assert.ok(alive > 0 && alive <= 5, `cap respected (${alive})`);
 });
 
 test('spawner skips columns with no matching biome or surface', () => {

@@ -357,6 +357,7 @@ class Game {
     if (this.entityFocus) {
       const { view, distance } = this.entityFocus;
       const label = view.state === 'corpse' ? `${view.def.name} carcass · E to butcher` : `${view.def.name} ${view.health}/${view.maxHealth}`;
+      this.entityFocus.blockBehind = this.focus;
       this.focus = null;
       this.scene.setHighlight(null);
       this.hud.setFocus({ blockName: label, distance });
@@ -398,12 +399,13 @@ const ACTIONS = {
   harvest_stop: (game) => game.cancelHarvest(),
   use: (game) => game.useHeld(),
   interact: (game) => {
-    if (game.entityFocus) {
+    if (game.entityFocus?.view.state === 'corpse') {
       game.interactEntity();
       return;
     }
-    if (!game.focus) return;
-    game.net.send(C2S.INTERACT, { target: { x: game.focus.x, y: game.focus.y, z: game.focus.z } });
+    const target = game.focus ?? game.entityFocus?.blockBehind;
+    if (!target) return;
+    game.net.send(C2S.INTERACT, { target: { x: target.x, y: target.y, z: target.z } });
   },
   select_slot: (game, { slot }) => {
     if (!game.inventory || slot >= game.inventory.quickbarSize) return;

@@ -133,6 +133,8 @@ export const LOOT_TABLES = [
       lootEntry({ item: 'wooden_pickaxe', weight: 2 }),
       lootEntry({ item: 'leather_cap', weight: 1 }),
       lootEntry({ item: 'healing_potion', weight: 1 }),
+      lootEntry({ item: 'flint_knife', weight: 2 }),
+      lootEntry({ item: 'butchers_primer', weight: 1 }),
     ],
   },
 ];
@@ -166,7 +168,7 @@ export function rollLootTable(table, rng, context = {}) {
   const candidates = [];
   for (const e of table.entries) {
     if (meetsRequirements(e.requires, context)) candidates.push({ entry: e, skilled: true });
-    else if ((e.unskilled ?? 0) > 0 || e.ruined) candidates.push({ entry: e, skilled: false });
+    else if ((e.unskilled ?? DEFAULT_UNSKILLED_CHANCE) > 0 || e.ruined) candidates.push({ entry: e, skilled: false });
   }
   if (candidates.length === 0) return [];
 
@@ -183,7 +185,7 @@ export function rollLootTable(table, rng, context = {}) {
       return;
     }
     const roll = rng.next();
-    const real = e.chance * (e.unskilled ?? 0);
+    const real = e.chance * (e.unskilled ?? DEFAULT_UNSKILLED_CHANCE);
     if (roll < real) award(e.item, e);
     else if (e.ruined && roll < real + e.chance * (e.ruinedChance ?? 0)) award(e.ruined, e);
   };

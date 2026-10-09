@@ -37,8 +37,11 @@ import { ItemUseSystem } from '../game/item-use.js';
 import { openContainer, transferStack } from '../game/containers.js';
 import { C2S, S2C } from '../net/protocol.js';
 import { sessionsNear } from '../net/interest.js';
-import { raycast } from '../world/raycast.js';
-import { EntityManager, Spawner, entityBox, distanceToBox } from '../entity/index.js';
+import { raycast, directionFromAngles } from '../world/raycast.js';
+import { EntityManager, Spawner, entityBox, distanceToBox, rayBoxDistance } from '../entity/index.js';
+
+/** Blocks of slack around an entity box when checking the player's aim. */
+const AIM_SLACK = 0.3;
 import { Session } from './session.js';
 import { authenticate } from './auth.js';
 
@@ -450,23 +453,21 @@ export class GameServer {
     const eye = player.eyePosition;
     const box = entityBox(entity);
     if (distanceToBox(eye, box) > MAX_REACH) return { ok: false, reason: 'out of reach' };
-    const center = {
-      x: (box.min.x + box.max.x) / 2,
-      y: (box.min.y + box.max.y) / 2,
-      z: (box.min.z + box.max.z) / 2,
+    const aimBox = {
+      min: { x: box.min.x - AIM_SLACK, y: box.min.y - AIM_SLACK, z: box.min.z - AIM_SLACK },
+      max: { x: box.max.x + AIM_SLACK, y: box.max.y + AIM_SLACK, z: box.max.z + AIM_SLACK },
     };
-    const offset = { x: center.x - eye.x, y: center.y - eye.y, z: center.z - eye.z };
-    const distance = Math.hypot(offset.x, offset.y, offset.z);
-    if (distance < 1e-6) return { ok: true };
-    const direction = { x: offset.x / distance, y: offset.y / distance, z: offset.z / distance };
+    const direction = directionFromAngles(player.yaw, player.pitch);
+    const entry = rayBoxDistance(eye, direction, aimBox, MAX_REACH + AIM_SLACK);
+    if (entry === null) return { ok: false, reason: 'not looking at it' };
     const hit = raycast({
       origin: eye,
       direction,
-      maxDistance: distance,
+      maxDistance: entry,
       getBlock: (x, y, z) => this.world.getBlock(x, y, z),
       isHit: (blockId) => this.content.isSolid(blockId),
     });
-    if (hit && hit.distance < distance - 0.5) return { ok: false, reason: 'no line of sight' };
+    if (hit) return { ok: false, reason: 'no line of sight' };
     return { ok: true };
   }
 

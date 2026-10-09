@@ -120,6 +120,13 @@ export const ITEM_DEFINITIONS = [
   }),
 
   item({
+    id: 'butchers_primer',
+    name: "Butcher's Primer",
+    maxStack: 1,
+    use: { action: USE_ACTIONS.LEARN, knowledge: 'butchery' },
+  }),
+
+  item({
     id: 'wooden_pickaxe',
     name: 'Wooden Pickaxe',
     maxStack: 1,

@@ -10,6 +10,7 @@ import { WorldGenerator } from '../src/world/generator.js';
 import { World } from '../src/world/world.js';
 import { Chunk, rleEncode, rleDecode } from '../src/world/chunk.js';
 import { CHUNK_VOLUME } from '../src/core/constants.js';
+import { entityBox } from '../src/entity/hitbox.js';
 import {
   C2S,
   S2C,
@@ -632,6 +633,16 @@ test('entities stream to nearby sessions as add, update and remove', async () =>
   assert.deepEqual(client.last(S2C.ENTITY_REMOVE).ids, [cow.id]);
 });
 
+function aimAt(player, entity) {
+  const box = entityBox(entity);
+  const eye = player.eyePosition;
+  const dx = (box.min.x + box.max.x) / 2 - eye.x;
+  const dy = (box.min.y + box.max.y) / 2 - eye.y;
+  const dz = (box.min.z + box.max.z) / 2 - eye.z;
+  player.yaw = Math.atan2(-dx, -dz);
+  player.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+}
+
 test('click-to-hit respects reach and cooldown, and kills leave a butcherable corpse', async () => {
   const { server } = await makeServer({ spawnEntities: false });
   const { client, session } = await connectAndLogin(server);
@@ -645,6 +656,12 @@ test('click-to-hit respects reach and cooldown, and kills leave a butcherable co
   await session.handleRaw(encode(C2S.ATTACK, { entity: 'en_missing' }));
   assert.equal(client.last(S2C.ACTION_RESULT).reason, 'nothing to attack');
 
+  aimAt(session.player, cow);
+  session.player.yaw += Math.PI;
+  await session.handleRaw(encode(C2S.ATTACK, { entity: cow.id }));
+  assert.equal(client.last(S2C.ACTION_RESULT).reason, 'not looking at it');
+
+  aimAt(session.player, cow);
   await session.handleRaw(encode(C2S.ATTACK, { entity: cow.id }));
   assert.equal(client.last(S2C.ACTION_RESULT).ok, true);
   assert.equal(client.last(S2C.ACTION_RESULT).detail.damage, 1);
