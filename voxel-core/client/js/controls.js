@@ -73,7 +73,7 @@ export class Controls {
     });
 
     document.addEventListener('keydown', (event) => {
-      if (this.isTyping()) return;
+      if (this.isTyping() || isEditable(event.target)) return;
       this.keys.add(event.code);
       this._handleActionKey(event);
     });
@@ -227,4 +227,11 @@ export class Controls {
 export function wrapAngle(angle) {
   const wrapped = (angle + Math.PI) % (Math.PI * 2);
   return (wrapped < 0 ? wrapped + Math.PI * 2 : wrapped) - Math.PI;
+}
+
+/** True when a key event is aimed at a text field rather than the game. */
+export function isEditable(target) {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
 }

@@ -21,6 +21,7 @@ import {
   isVector3,
   USERNAME_PATTERN,
   MAX_MESSAGE_BYTES,
+  MAX_SERVER_MESSAGE_BYTES,
 } from '../src/net/protocol.js';
 import { TokenBucket, RateLimiter } from '../src/net/rate-limiter.js';
 import { chunkDelta, isInInterest } from '../src/net/interest.js';
@@ -687,4 +688,13 @@ test('click-to-hit respects reach and cooldown, and kills leave a butcherable co
   assert.ok(session.player.inventory.countOf('bone') >= 1);
   assert.equal(server.entities.get(cow.id), null);
   assert.ok(client.last(S2C.ENTITY_REMOVE).ids.includes(cow.id));
+});
+
+test('heavily edited chunks fit the server-to-client frame cap but not the inbound cap', () => {
+  const chunk = new Chunk(0, 0);
+  for (let i = 0; i < CHUNK_VOLUME; i++) chunk.blocks[i] = i % 2 ? BLOCK_IDS.STONE : BLOCK_IDS.DIRT;
+  const frame = encode(S2C.CHUNK, chunk.toWire());
+  assert.ok(frame.length > MAX_MESSAGE_BYTES);
+  assert.equal(decode(frame).reason, 'message too large');
+  assert.equal(decode(frame, { maxBytes: MAX_SERVER_MESSAGE_BYTES }).message.t, S2C.CHUNK);
 });

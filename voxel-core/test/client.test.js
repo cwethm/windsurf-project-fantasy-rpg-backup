@@ -31,7 +31,7 @@ register('./helpers/src-loader.js', import.meta.url, { data: { rootUrl: packageR
 const { ClientWorld } = await import('../client/js/world-view.js');
 const { TargetResolver } = await import('../client/js/targeting.js');
 const { defaultUrl } = await import('../client/js/net.js');
-const { wrapAngle } = await import('../client/js/controls.js');
+const { wrapAngle, isEditable } = await import('../client/js/controls.js');
 const { ChunkMesher } = await import('../client/js/chunk-mesher.js');
 const { planSlotAction, quickSlotAction, fitsEquipSlot, AREAS } = await import('../client/js/inventory-panel.js');
 const { C2S, validate } = await import('../src/net/protocol.js');
@@ -532,4 +532,12 @@ test('inventory panel gesture planning', async (t) => {
       assert.equal(validate({ t: type, ...payload }).ok, true, type);
     }
   });
+});
+
+test('isEditable treats form fields as text input, not game keys', () => {
+  assert.equal(isEditable({ tagName: 'INPUT' }), true);
+  assert.equal(isEditable({ tagName: 'TEXTAREA' }), true);
+  assert.equal(isEditable({ tagName: 'DIV', isContentEditable: true }), true);
+  assert.equal(isEditable({ tagName: 'CANVAS' }), false);
+  assert.equal(isEditable(null), false);
 });
